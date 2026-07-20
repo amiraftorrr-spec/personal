@@ -4,32 +4,40 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const lenis = new Lenis({
-  autoRaf: false,
+const isDesktop =
+  typeof window !== "undefined" &&
+  window.matchMedia("(pointer: fine)").matches;
 
-  // سرعت طبیعی
-  duration: 0.8,
+let lenis = null;
 
-  // حس نرم ولی کنترل‌شده
-  lerp: 0.08,
+if (isDesktop) {
+  lenis = new Lenis({
+    autoRaf: false,
 
-  smoothWheel: true,
-  syncTouch: true,
-  touchInertiaMultiplier: 1.2,
+    // سرعت طبیعی
+    duration: 0.8,
 
-  wheelMultiplier: 0.9,
+    // حس نرم ولی کنترل‌شده
+    lerp: 0.08,
 
-  infinite: false,
-});
+    smoothWheel: true,
+    syncTouch: true,
+    touchInertiaMultiplier: 1.2,
 
-lenis.on("scroll", ScrollTrigger.update);
+    wheelMultiplier: 0.9,
 
-gsap.ticker.add((time) => {
-  lenis.raf(time * 1000);
-});
+    infinite: false,
+  });
 
-gsap.ticker.lagSmoothing(0);
- 
+  lenis.on("scroll", ScrollTrigger.update);
+
+  gsap.ticker.add((time) => {
+    lenis.raf(time * 1000);
+  });
+
+  gsap.ticker.lagSmoothing(0);
+}
+
 requestAnimationFrame(() => {
   ScrollTrigger.refresh();
 });
