@@ -103,6 +103,18 @@ const techCards = [
   },
 ];
 
+// موقعیت ثابت ذرات - بیرون از رندر تا هر بار ساخته نشه
+const PARTICLE_POSITIONS = [
+  { left: 10, top: 20 },
+  { left: 75, top: 15 },
+  { left: 25, top: 70 },
+  { left: 85, top: 60 },
+  { left: 50, top: 40 },
+  { left: 15, top: 85 },
+  { left: 65, top: 25 },
+  { left: 40, top: 55 },
+];
+
 export default function ScrollSkill() {
   const containerRef = useRef(null);
   const sectionsRef = useRef([]);
@@ -122,8 +134,15 @@ export default function ScrollSkill() {
       const sections = sectionsRef.current;
       if (!container || sections.length === 0) return;
 
+      // جلوگیری از هزینه‌ی اضافه‌ی ری‌سایز روی موبایل هنگام اسکرول (آدرس‌بار و ...)
+      ScrollTrigger.config({ ignoreMobileResize: true });
+
       const ctx = gsap.context(() => {
         const lastIndexRef = { current: -1 };
+
+        // روی خود پنل‌ها will-change ست میشه (نه فقط روی والد) چون این‌ها هستن
+        // که واقعاً ترنسفورم میخورن؛ اینطوری مرورگر از قبل لایه‌ی جداگانه براشون میسازه
+        gsap.set(sections, { willChange: "transform" });
 
         const scrollAnimation = gsap.to(sections, {
           xPercent: -100 * (sections.length - 1),
@@ -133,10 +152,13 @@ export default function ScrollSkill() {
             trigger: container,
             pin: true,
             anticipatePin: 1,
-            // فقط دنبال مقدار واقعی اسکرول کاربر میره - هیچ پرش یا
-            // تکمیل خودکاری وجود نداره. اگه کاربر وسط راه دست بکشه،
-            // همونجا می‌مونه و فقط با اسکرول بیشتر خودش جلو میره.
             scrub: 0.5,
+            snap: {
+              snapTo: 1 / (sections.length - 1),
+              delay: 1, // ۲ ثانیه پس از متوقف شدن اسکرول
+              duration: { min: 0.3, max: 0.8 },
+              ease: "power2.inOut",
+            },
             end: () => "+=" + container.offsetWidth * (sections.length - 1),
             onUpdate: (self) => {
               const idx = Math.round(self.progress * (sections.length - 1));
@@ -162,6 +184,14 @@ export default function ScrollSkill() {
             ease: "power2.out",
             overwrite: "auto",
           });
+
+          // انیمیشن CSS نور (aurora) فقط برای پنل فعال اجرا میشه، بقیه pause میشن
+          // تا مرورگر مجبور نباشه ۶ تا انیمیشن نامرئی رو همزمان محاسبه کنه
+          glowRefs.current.forEach((el, i) => {
+            if (!el) return;
+            el.style.animationPlayState = i === idx ? "running" : "paused";
+          });
+
           dotRefs.current.forEach((d, i) => {
             if (!d) return;
             gsap.to(d, {
@@ -178,136 +208,76 @@ export default function ScrollSkill() {
         gsap.set(glowRefs.current[0], { opacity: 1 });
         updateActive(0);
 
-        sections.forEach((section, index) => {
+        sections.forEach((section) => {
           const icon = section.querySelector(".tech-icon");
           const title = section.querySelector(".tech-title");
           const desc = section.querySelector(".tech-desc");
           const features = section.querySelectorAll(".feature-item");
-          const particles = section.querySelectorAll(".particle");
           const badge = section.querySelector(".intro-badge");
 
+          // به‌جای ۴ ScrollTrigger جدا برای هر پنل (icon/title/desc/features)
+          // فقط یک تایم‌لاین با یک ScrollTrigger ساخته میشه. یعنی روی ۶ پنل
+          // جمعاً ۶ ScrollTrigger داریم به‌جای ۲۴ تا - این خودش بزرگترین
+          // منبع لگ روی اسکرول بود چون هر کدوم جدا progress محاسبه میکردن.
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: section,
+              containerAnimation: scrollAnimation,
+              start: "left center",
+              toggleActions: "play none none reverse",
+            },
+            defaults: { overwrite: "auto" },
+          });
+
           if (icon) {
-            gsap.fromTo(
+            // فیلتر blur روی انیمیشن حذف شد - انیمیشن blur از گرون‌ترین
+            // چیزهاییه که میشه روی اسکرول اجرا کرد چون repaint اجباری میده
+            tl.fromTo(
               icon,
-              { scale: 0.25, rotation: -50, opacity: 0, filter: "blur(25px)" },
-              {
-                scale: 1,
-                rotation: 0,
-                opacity: 1,
-                filter: "blur(0px)",
-                duration: 1.1,
-                ease: "elastic.out(1, 0.5)",
-                scrollTrigger: {
-                  trigger: section,
-                  containerAnimation: scrollAnimation,
-                  start: "left center",
-                  toggleActions: "play none none reverse",
-                },
-              }
+              { scale: 0.25, rotation: -50, opacity: 0 },
+              { scale: 1, rotation: 0, opacity: 1, duration: 1.1, ease: "elastic.out(1, 0.5)" },
+              0
             );
           }
 
           if (badge) {
-            gsap.fromTo(
+            tl.fromTo(
               badge,
               { scale: 0.5, rotation: -20, opacity: 0 },
-              {
-                scale: 1,
-                rotation: 0,
-                opacity: 1,
-                duration: 0.9,
-                ease: "elastic.out(1, 0.6)",
-                scrollTrigger: {
-                  trigger: section,
-                  containerAnimation: scrollAnimation,
-                  start: "left center",
-                  toggleActions: "play none none reverse",
-                },
-              }
+              { scale: 1, rotation: 0, opacity: 1, duration: 0.9, ease: "elastic.out(1, 0.6)" },
+              0
             );
           }
 
           if (title) {
-            gsap.fromTo(
+            // clip-path حذف شد (لایه‌سازی و repaint گرون)، به‌جاش فقط
+            // ترنسفورم (x/skew) + opacity که هر دو روی GPU کامپوزیت میشن
+            tl.fromTo(
               title,
-              { x: -100, opacity: 0, skewX: 10, clipPath: "inset(0 100% 0 0)" },
-              {
-                x: 0,
-                opacity: 1,
-                skewX: 0,
-                clipPath: "inset(0 0% 0 0)",
-                duration: 0.8,
-                delay: 0.3,
-                ease: "power4.out",
-                scrollTrigger: {
-                  trigger: section,
-                  containerAnimation: scrollAnimation,
-                  start: "left center",
-                  toggleActions: "play none none reverse",
-                },
-              }
+              { x: -100, opacity: 0, skewX: 10 },
+              { x: 0, opacity: 1, skewX: 0, duration: 0.8, ease: "power4.out" },
+              0.3
             );
           }
 
           if (desc) {
-            gsap.fromTo(
+            tl.fromTo(
               desc,
               { y: 50, opacity: 0 },
-              {
-                y: 0,
-                opacity: 1,
-                duration: 0.8,
-                delay: 0.5,
-                ease: "power3.out",
-                scrollTrigger: {
-                  trigger: section,
-                  containerAnimation: scrollAnimation,
-                  start: "left center",
-                  toggleActions: "play none none reverse",
-                },
-              }
+              { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" },
+              0.5
             );
           }
 
           if (features.length > 0) {
-            gsap.fromTo(
+            // rotateY سه‌بعدی حذف شد چون باعث ساخت لایه‌ی جدید با پرسپکتیو
+            // میشه؛ افکت ورود با x + scale حفظ شده و بصری تقریبا مشابهه
+            tl.fromTo(
               features,
-              { x: -60, opacity: 0, rotateY: -60, transformOrigin: "left center" },
-              {
-                x: 0,
-                opacity: 1,
-                rotateY: 0,
-                duration: 0.65,
-                stagger: 0.1,
-                delay: 0.7,
-                ease: "back.out(1.8)",
-                scrollTrigger: {
-                  trigger: section,
-                  containerAnimation: scrollAnimation,
-                  start: "left center",
-                  toggleActions: "play none none reverse",
-                },
-              }
+              { x: -60, opacity: 0, scale: 0.9 },
+              { x: 0, opacity: 1, scale: 1, duration: 0.65, stagger: 0.1, ease: "back.out(1.8)" },
+              0.7
             );
-          }
-
-          if (particles.length > 0) {
-            particles.forEach((particle, i) => {
-              const yValue = i % 2 === 0 ? -40 : 50;
-              const xValue = i % 3 === 0 ? -25 : 30;
-              const rotationValue = i * 45;
-              const durationValue = 3.5 + (i % 3) * 0.5;
-              gsap.to(particle, {
-                y: yValue,
-                x: xValue,
-                rotation: rotationValue,
-                duration: durationValue,
-                repeat: -1,
-                yoyo: true,
-                ease: "sine.inOut",
-                delay: i * 0.2,
-              });
-            });
           }
         });
       }, containerRef);
@@ -337,9 +307,25 @@ export default function ScrollSkill() {
             50%  { transform: translate(30px, -20px) scale(1.15); }
             100% { transform: translate(-20px, 15px) scale(1.05); }
           }
-          .glow-layer { animation: auroraShift 9s ease-in-out infinite alternate; }
+          .glow-layer {
+            animation: auroraShift 9s ease-in-out infinite alternate;
+            will-change: transform;
+          }
           .feature-item, .intro-row { transition: transform .35s ease, background-color .35s ease; }
           .feature-item:hover, .intro-row:hover { transform: translateX(-10px) scale(1.03); background-color: rgba(255,255,255,0.06); }
+
+          /* ذرات شناور حالا کلا CSS هستن - قبلا هر ذره یه gsap.to بی‌نهایت
+             جدا داشت (۴۸ تا تویین همزمان روی کل صفحه) که مستقیم با
+             اسکرول اصلی روی هم می‌افتاد و لگ می‌ساخت */
+          .particle {
+            animation: floatParticle var(--pd, 4s) ease-in-out infinite;
+            animation-delay: var(--pdelay, 0s);
+            will-change: transform;
+          }
+          @keyframes floatParticle {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(var(--px, 20px), var(--py, -30px)) rotate(180deg); }
+          }
         `}</style>
 
         <div ref={containerRef} className="relative h-screen overflow-hidden">
@@ -365,28 +351,36 @@ export default function ScrollSkill() {
                   if (el) sectionsRef.current[index] = el;
                 }}
                 className="relative w-screen h-screen flex items-center justify-center overflow-hidden"
+                style={{
+                  // مهم‌ترین بهینه‌سازی: پنل‌هایی که الان دیده نمیشن (بقیه‌ی
+                  // ۵ تا صفحه) اصلا رندر/پینت نمیشن. مرورگر خودش تشخیص
+                  // میده کدوم داخل viewport هست و بقیه رو کاملا نادیده میگیره
+                  contentVisibility: "auto",
+                  containIntrinsicSize: "100vw 100vh",
+                }}
               >
                 <div className="absolute inset-0 pointer-events-none">
-                  {[
-                    { left: 10, top: 20 },
-                    { left: 75, top: 15 },
-                    { left: 25, top: 70 },
-                    { left: 85, top: 60 },
-                    { left: 50, top: 40 },
-                    { left: 15, top: 85 },
-                    { left: 65, top: 25 },
-                    { left: 40, top: 55 },
-                  ].map((pos, i) => (
-                    <div
-                      key={i}
-                      className="particle absolute w-2 h-2 rounded-full opacity-20"
-                      style={{
-                        backgroundColor: tech.color,
-                        left: `${pos.left}%`,
-                        top: `${pos.top}%`,
-                      }}
-                    />
-                  ))}
+                  {PARTICLE_POSITIONS.map((pos, i) => {
+                    const yValue = i % 2 === 0 ? -40 : 50;
+                    const xValue = i % 3 === 0 ? -25 : 30;
+                    const durationValue = 3.5 + (i % 3) * 0.5;
+                    const delayValue = i * 0.2;
+                    return (
+                      <div
+                        key={i}
+                        className="particle absolute w-2 h-2 rounded-full opacity-20"
+                        style={{
+                          backgroundColor: tech.color,
+                          left: `${pos.left}%`,
+                          top: `${pos.top}%`,
+                          "--px": `${xValue}px`,
+                          "--py": `${yValue}px`,
+                          "--pd": `${durationValue}s`,
+                          "--pdelay": `${delayValue}s`,
+                        }}
+                      />
+                    );
+                  })}
                 </div>
 
                 <div className="relative z-10 max-w-6xl mx-auto px-12 grid grid-cols-2 gap-16 items-center">
