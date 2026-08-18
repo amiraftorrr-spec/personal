@@ -183,7 +183,7 @@ export default function About() {
             >
               <img
                 src="/me.webp"
-                alt="me"
+                alt="Amir Aftor - Frontend Developer Portfolio"
                 draggable={false}
                 className="w-full h-full object-cover select-none"
               />

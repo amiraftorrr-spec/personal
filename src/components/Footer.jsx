@@ -95,6 +95,7 @@ export default function Footer() {
           <div className="flex items-center gap-4 mt-6">
             <a
               href="mailto:aftordev@gmail.com"
+              aria-label="Send an email to aftordev@gmail.com"
               className="cursor-hover w-11 h-11 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66]"
             >
               <FaEnvelope />
@@ -103,6 +104,7 @@ export default function Footer() {
               href="https://t.me/amiraftor"
               target="_blank"
               rel="noreferrer"
+              aria-label="Telegram Profile"
               className="cursor-hover w-11 h-11 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66]"
             >
               <FaTelegramPlane />
@@ -111,6 +113,7 @@ export default function Footer() {
               href="https://instagram.com/amir.aftor"
               target="_blank"
               rel="noreferrer"
+              aria-label="Instagram Profile"
               className="cursor-hover w-11 h-11 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66]"
             >
               <FaInstagram />
