@@ -7,6 +7,7 @@ import {
   FaInstagram,
   FaPaperPlane,
 } from "react-icons/fa";
+import { API_BASE_URL } from "../config/api";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -15,10 +16,7 @@ const BASE_BORDER = "rgba(200, 169, 110, 0.15)";
 const NOISE_BG =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")";
 
-// آدرس بک‌اند - موقع دولوپ لوکال همینه، موقع دیپلوی این رو با متغیر
-// محیطی (مثلا import.meta.env.VITE_API_URL یا process.env.NEXT_PUBLIC_API_URL)
-// جایگزین کن تا هاردکد نمونه.
-const CONTACT_API_URL = "http://localhost:3001/contact";
+const CONTACT_API_URL = `${API_BASE_URL}/contact`;
 
 export default function Contact() {
   const sectionRef = useRef(null);
@@ -282,7 +280,8 @@ export default function Contact() {
             <button
               type="submit"
               disabled={loading}
-              className="cursor-hover contact-field shrink-0 relative z-10 mt-2 inline-flex items-center justify-center gap-3 rounded-full bg-[#1a1a1a] border-2 border-[#c8a96e] text-[#c8a96e] font-semibold py-4 transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_30px_#c8a96e80] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-[#1a1a1a] disabled:hover:text-[#c8a96e]"
+              aria-label="Send message"
+              className="cursor-hover contact-field shrink-0 relative z-10 mt-2 inline-flex items-center justify-center gap-3 rounded-full bg-[#1a1a1a] border-2 border-[#c8a96e] text-[#c8a96e] font-semibold py-4 transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_30px_#c8a96e80] hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#c8a96e] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-[#1a1a1a] disabled:hover:text-[#c8a96e]"
             >
               {loading ? "Sending..." : sent ? "Message Sent" : "Send Message"}
               <FaPaperPlane className="text-sm transition-transform duration-300 group-hover:translate-x-1" />

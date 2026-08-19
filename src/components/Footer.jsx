@@ -158,8 +158,10 @@ export default function Footer() {
         </p>
 
         <button
+          type="button"
           onClick={scrollToTop}
-          className="cursor-hover flex items-center gap-2 text-sm text-[#c8a96e] border border-[#c8a96e]/40 rounded-full px-5 py-2 transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66]"
+          aria-label="Back to top"
+          className="cursor-hover flex items-center gap-2 text-sm text-[#c8a96e] border border-[#c8a96e]/40 rounded-full px-5 py-2 transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66] focus:outline-none focus:ring-2 focus:ring-[#c8a96e]"
         >
           Back to top
           <FaArrowUp className="text-xs" />
