@@ -91,11 +91,17 @@ const ProjectCard = forwardRef(function ProjectCard({ project }, ref) {
           {project.title}
         </h3>
 
-        <p className="text-zinc-400 text-base leading-7 mb-6 min-h-[3.5rem]">
+        <p className="text-zinc-300 text-base leading-7 mb-6 min-h-[3.5rem]">
           {project.description}
         </p>
 
-        <a href={project.link} target="_blank" rel="noopener noreferrer" className="cursor-hover inline-flex items-center gap-2 text-[#c8a96e] font-medium group/btn">
+        <a
+          href={project.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`View project: ${project.title}`}
+          className="cursor-hover inline-flex items-center gap-2 text-[#c8a96e] font-medium group/btn"
+        >
           View Project
           <FaArrowRight className="text-sm transition-transform duration-300 group-hover/btn:translate-x-1" />
         </a>
@@ -316,9 +322,11 @@ export default function Projects() {
 
       <div className="relative z-10 flex items-center justify-center mt-12">
         <button
+          type="button"
           onClick={toggleOpen}
-          aria-label={open ? "Show less" : "Show more"}
-          className="cursor-hover w-14 h-14 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-black hover:scale-110 hover:shadow-[0_0_25px_#c8a96e66]"
+          aria-expanded={open}
+          aria-label={open ? "Show less projects" : "Show more projects"}
+          className="cursor-hover w-14 h-14 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-black hover:scale-110 hover:shadow-[0_0_25px_#c8a96e66] focus:outline-none focus:ring-2 focus:ring-[#c8a96e]"
         >
           <span ref={arrowRef} className="inline-flex">
             <FaChevronDown className="text-xl" />

@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { Routes, Route } from "react-router-dom";
 
 import Hero from "./components/Hero";
 import Particles from "./components/Particles";
@@ -13,8 +14,9 @@ const Skills = lazy(() => import("./components/Skills"));
 const P = lazy(() => import("./components/P"));
 const Contact = lazy(() => import("./components/Contact"));
 const Footer = lazy(() => import("./components/Footer"));
+const AdminPanel = lazy(() => import("./components/AdminPanel"));
 
-function App() {
+function MainSite() {
   return (
     <div className="relative">
       <Particles />
@@ -31,6 +33,28 @@ function App() {
         <Footer />
       </Suspense>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<MainSite />} />
+      <Route
+        path="/admin"
+        element={
+          <Suspense
+            fallback={
+              <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center text-[#c8a96e]">
+                در حال بارگذاری پنل مدیریت...
+              </div>
+            }
+          >
+            <AdminPanel />
+          </Suspense>
+        }
+      />
+    </Routes>
   );
 }
 

@@ -206,7 +206,7 @@ export default function About() {
             <span className="text-[#c8a96e]">I'm AmirAftor</span>
           </h2>
 
-          <p className="text-zinc-400 text-base sm:text-lg lg:text-xl leading-8 lg:leading-10 mt-6 lg:mt-8 max-w-xl">
+          <p className="text-zinc-300 text-base sm:text-lg lg:text-xl leading-8 lg:leading-10 mt-6 lg:mt-8 max-w-xl">
             I'm a Frontend Developer passionate about crafting modern,
             interactive and visually engaging web experiences. I enjoy building
             fast, responsive and elegant interfaces with React, Next.js,
@@ -214,6 +214,7 @@ export default function About() {
           </p>
 
           <button
+            type="button"
             onClick={handleContactClick}
             className="
             cursor-hover
@@ -234,6 +235,9 @@ export default function About() {
             hover:scale-105
             hover:shadow-[0_0_35px_#c8a96e66]
             active:scale-95
+            focus:outline-none
+            focus:ring-2
+            focus:ring-[#c8a96e]
             "
           >
             Contact Me

@@ -18,16 +18,38 @@ export default function CustomCursor() {
   useEffect(() => {
     if (!isDesktop) return;
 
+    const cursorEl = cursor.current;
+    if (!cursorEl) return;
+
+    const xSetter = gsap.quickSetter(cursorEl, "x", "px");
+    const ySetter = gsap.quickSetter(cursorEl, "y", "px");
+
+    let mouseX = 0;
+    let mouseY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let rafId = null;
+
     const move = (e) => {
-      gsap.to(cursor.current, {
-        x: e.clientX,
-        y: e.clientY,
-        duration: 0.15,
-      });
+      mouseX = e.clientX;
+      mouseY = e.clientY;
     };
 
-    window.addEventListener("mousemove", move);
-    return () => window.removeEventListener("mousemove", move);
+    const render = () => {
+      currentX += (mouseX - currentX) * 0.2;
+      currentY += (mouseY - currentY) * 0.2;
+      xSetter(currentX);
+      ySetter(currentY);
+      rafId = requestAnimationFrame(render);
+    };
+
+    rafId = requestAnimationFrame(render);
+    window.addEventListener("mousemove", move, { passive: true });
+
+    return () => {
+      window.removeEventListener("mousemove", move);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, [isDesktop]);
 
   if (!isDesktop) return null;

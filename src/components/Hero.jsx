@@ -118,7 +118,7 @@ export default function Hero() {
           </span>
         </h1>
 
-        <p className="text-zinc-400 text-base sm:text-lg lg:text-xl mt-6 lg:mt-8 max-w-xl leading-8 lg:leading-9">
+        <p className="text-zinc-300 text-base sm:text-lg lg:text-xl mt-6 lg:mt-8 max-w-xl leading-8 lg:leading-9">
           Frontend Developer • UI Enthusiast • Creative Coder
         </p>
 
@@ -126,6 +126,7 @@ export default function Hero() {
         <div className="flex flex-wrap justify-center lg:justify-start gap-4 sm:gap-5 mt-10 lg:mt-12">
 
           <button
+            type="button"
             onClick={() => scrollToSection("projects")}
             className="
             cursor-hover
@@ -144,12 +145,16 @@ export default function Hero() {
             duration-300
             hover:scale-105
             hover:shadow-[0_0_25px_#c8a96e66]
+            focus:outline-none
+            focus:ring-2
+            focus:ring-[#c8a96e]
             "
           >
             View Projects
           </button>
 
           <button
+            type="button"
             onClick={() => scrollToSection("contact")}
             className="
             cursor-hover
@@ -170,6 +175,9 @@ export default function Hero() {
             hover:text-black
             hover:scale-105
             hover:shadow-[0_0_20px_#c8a96e44]
+            focus:outline-none
+            focus:ring-2
+            focus:ring-[#c8a96e]
             "
           >
             Contact Me

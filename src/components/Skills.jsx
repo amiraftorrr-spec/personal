@@ -121,6 +121,7 @@ export default function ScrollSkill() {
   const glowRefs = useRef([]);
   const dotRefs = useRef([]);
   const scrollAnimRef = useRef(null);
+  const activeIdxRef = useRef(0);
 
   const cardsSectionRef = useRef(null);
   const cardsRef = useRef([]);
@@ -134,37 +135,39 @@ export default function ScrollSkill() {
       const sections = sectionsRef.current;
       if (!container || sections.length === 0) return;
 
-      // جلوگیری از هزینه‌ی اضافه‌ی ری‌سایز روی موبایل هنگام اسکرول (آدرس‌بار و ...)
-      ScrollTrigger.config({ ignoreMobileResize: true });
+      ScrollTrigger.config({ ignoreMobileResize: true, autoRefreshEvents: "visibilitychange,DOMContentLoaded,load" });
 
       const ctx = gsap.context(() => {
-        const lastIndexRef = { current: -1 };
+        let lastIndex = 0;
 
-        // روی خود پنل‌ها will-change ست میشه (نه فقط روی والد) چون این‌ها هستن
-        // که واقعاً ترنسفورم میخورن؛ اینطوری مرورگر از قبل لایه‌ی جداگانه براشون میسازه
-        gsap.set(sections, { willChange: "transform" });
+        // آماده‌سازی GPU بدون تحمیل لایه‌های سنگین
+        gsap.set(sections, { force3D: true, transformPerspective: 1000 });
 
+        const totalPanels = sections.length;
         const scrollAnimation = gsap.to(sections, {
-          xPercent: -100 * (sections.length - 1),
+          xPercent: -100 * (totalPanels - 1),
           ease: "none",
           force3D: true,
           scrollTrigger: {
             trigger: container,
             pin: true,
             anticipatePin: 1,
-            scrub: 0.5,
+            scrub: true,
+            fastScrollEnd: true,
+            preventOverlaps: true,
             snap: {
-              snapTo: 1 / (sections.length - 1),
-              delay: 1, // ۲ ثانیه پس از متوقف شدن اسکرول
-              duration: { min: 0.3, max: 0.8 },
-              ease: "power2.inOut",
+              snapTo: 1 / (totalPanels - 1),
+              delay: 0.25,
+              duration: { min: 0.2, max: 0.5 },
+              ease: "power2.out",
             },
-            end: () => "+=" + container.offsetWidth * (sections.length - 1),
+            end: () => "+=" + container.offsetWidth * (totalPanels - 1),
             onUpdate: (self) => {
-              const idx = Math.round(self.progress * (sections.length - 1));
-              // فقط وقتی ایندکس واقعاً عوض شده تویین جدید بساز - نه هر فریم اسکرول
-              if (idx === lastIndexRef.current) return;
-              lastIndexRef.current = idx;
+              const rawIdx = Math.round(self.progress * (totalPanels - 1));
+              const idx = Math.max(0, Math.min(totalPanels - 1, rawIdx));
+              if (idx === lastIndex) return;
+              lastIndex = idx;
+              activeIdxRef.current = idx;
               updateActive(idx);
             },
           },
@@ -172,40 +175,28 @@ export default function ScrollSkill() {
         scrollAnimRef.current = scrollAnimation;
 
         function updateActive(idx) {
-          gsap.to(glowRefs.current, {
-            opacity: 0,
-            duration: 0.8,
-            ease: "power2.out",
-            overwrite: "auto",
-          });
-          gsap.to(glowRefs.current[idx], {
-            opacity: 1,
-            duration: 1,
-            ease: "power2.out",
-            overwrite: "auto",
-          });
-
-          // انیمیشن CSS نور (aurora) فقط برای پنل فعال اجرا میشه، بقیه pause میشن
-          // تا مرورگر مجبور نباشه ۶ تا انیمیشن نامرئی رو همزمان محاسبه کنه
           glowRefs.current.forEach((el, i) => {
             if (!el) return;
-            el.style.animationPlayState = i === idx ? "running" : "paused";
+            const isActive = i === idx;
+            el.style.opacity = isActive ? "1" : "0";
+            el.style.animationPlayState = isActive ? "running" : "paused";
           });
 
           dotRefs.current.forEach((d, i) => {
             if (!d) return;
-            gsap.to(d, {
-              scale: i === idx ? 1.4 : 1,
-              backgroundColor: i === idx ? techStack[idx].color : "rgba(255,255,255,0.25)",
-              boxShadow: i === idx ? `0 0 12px ${techStack[idx].color}` : "none",
-              duration: 0.35,
-              overwrite: "auto",
-            });
+            const isActive = i === idx;
+            d.style.transform = isActive ? "scale(1.4)" : "scale(1)";
+            d.style.backgroundColor = isActive ? techStack[idx].color : "rgba(255,255,255,0.25)";
+            d.style.boxShadow = isActive ? `0 0 12px ${techStack[idx].color}` : "none";
           });
         }
 
-        gsap.set(glowRefs.current, { opacity: 0 });
-        gsap.set(glowRefs.current[0], { opacity: 1 });
+        // تنظیم اولیه سریع
+        glowRefs.current.forEach((el, i) => {
+          if (!el) return;
+          el.style.opacity = i === 0 ? "1" : "0";
+          el.style.animationPlayState = i === 0 ? "running" : "paused";
+        });
         updateActive(0);
 
         sections.forEach((section) => {
@@ -215,27 +206,23 @@ export default function ScrollSkill() {
           const features = section.querySelectorAll(".feature-item");
           const badge = section.querySelector(".intro-badge");
 
-          // به‌جای ۴ ScrollTrigger جدا برای هر پنل (icon/title/desc/features)
-          // فقط یک تایم‌لاین با یک ScrollTrigger ساخته میشه. یعنی روی ۶ پنل
-          // جمعاً ۶ ScrollTrigger داریم به‌جای ۲۴ تا - این خودش بزرگترین
-          // منبع لگ روی اسکرول بود چون هر کدوم جدا progress محاسبه میکردن.
           const tl = gsap.timeline({
             scrollTrigger: {
               trigger: section,
               containerAnimation: scrollAnimation,
-              start: "left center",
+              start: "left 65%",
               toggleActions: "play none none reverse",
+              fastScrollEnd: true,
+              preventOverlaps: true,
             },
-            defaults: { overwrite: "auto" },
+            defaults: { overwrite: "auto", force3D: true },
           });
 
           if (icon) {
-            // فیلتر blur روی انیمیشن حذف شد - انیمیشن blur از گرون‌ترین
-            // چیزهاییه که میشه روی اسکرول اجرا کرد چون repaint اجباری میده
             tl.fromTo(
               icon,
-              { scale: 0.25, rotation: -50, opacity: 0 },
-              { scale: 1, rotation: 0, opacity: 1, duration: 1.1, ease: "elastic.out(1, 0.5)" },
+              { scale: 0.35, rotation: -30, opacity: 0 },
+              { scale: 1, rotation: 0, opacity: 1, duration: 0.7, ease: "back.out(1.4)" },
               0
             );
           }
@@ -243,40 +230,36 @@ export default function ScrollSkill() {
           if (badge) {
             tl.fromTo(
               badge,
-              { scale: 0.5, rotation: -20, opacity: 0 },
-              { scale: 1, rotation: 0, opacity: 1, duration: 0.9, ease: "elastic.out(1, 0.6)" },
+              { scale: 0.6, rotation: -15, opacity: 0 },
+              { scale: 1, rotation: 0, opacity: 1, duration: 0.6, ease: "back.out(1.4)" },
               0
             );
           }
 
           if (title) {
-            // clip-path حذف شد (لایه‌سازی و repaint گرون)، به‌جاش فقط
-            // ترنسفورم (x/skew) + opacity که هر دو روی GPU کامپوزیت میشن
             tl.fromTo(
               title,
-              { x: -100, opacity: 0, skewX: 10 },
-              { x: 0, opacity: 1, skewX: 0, duration: 0.8, ease: "power4.out" },
-              0.3
+              { x: -60, opacity: 0 },
+              { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" },
+              0.15
             );
           }
 
           if (desc) {
             tl.fromTo(
               desc,
-              { y: 50, opacity: 0 },
-              { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" },
-              0.5
+              { y: 30, opacity: 0 },
+              { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" },
+              0.25
             );
           }
 
           if (features.length > 0) {
-            // rotateY سه‌بعدی حذف شد چون باعث ساخت لایه‌ی جدید با پرسپکتیو
-            // میشه؛ افکت ورود با x + scale حفظ شده و بصری تقریبا مشابهه
             tl.fromTo(
               features,
-              { x: -60, opacity: 0, scale: 0.9 },
-              { x: 0, opacity: 1, scale: 1, duration: 0.65, stagger: 0.1, ease: "back.out(1.8)" },
-              0.7
+              { x: -40, opacity: 0, scale: 0.95 },
+              { x: 0, opacity: 1, scale: 1, duration: 0.45, stagger: 0.06, ease: "power3.out" },
+              0.35
             );
           }
         });
@@ -404,15 +387,16 @@ export default function ScrollSkill() {
                         </p>
                         <div className="space-y-4">
                           {tech.features.map((feature, i) => (
-                            <div
+                            <button
                               key={i}
+                              type="button"
                               onClick={() => goTo(i + 1)}
-                              className="intro-row feature-item flex cursor-pointer items-center gap-4 p-4 bg-dark-card/50 backdrop-blur-sm rounded-xl border border-dark-border"
+                              className="intro-row feature-item w-full text-left flex cursor-pointer items-center gap-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#c8a96e]"
                               style={{ borderColor: `${tech.color}40`, boxShadow: `0 0 20px ${tech.color}10` }}
                             >
                               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tech.color }} />
                               <span className="text-lg text-gray-200 font-medium">{feature}</span>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -441,7 +425,7 @@ export default function ScrollSkill() {
                           {tech.features.map((feature, i) => (
                             <div
                               key={i}
-                              className="feature-item flex items-center gap-4 p-4 bg-dark-card/50 backdrop-blur-sm rounded-xl border border-dark-border"
+                              className="feature-item flex items-center gap-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10"
                               style={{ borderColor: `${tech.color}40`, boxShadow: `0 0 20px ${tech.color}10` }}
                             >
                               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tech.color }} />
@@ -466,13 +450,16 @@ export default function ScrollSkill() {
             ))}
           </div>
 
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-3">
-            {techStack.map((_, i) => (
-              <div
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-3" role="tablist" aria-label="Skills navigation">
+            {techStack.map((tech, i) => (
+              <button
                 key={i}
+                type="button"
+                role="tab"
+                aria-label={`Go to ${tech.name} skill`}
                 ref={(el) => (dotRefs.current[i] = el)}
                 onClick={() => goTo(i)}
-                className="h-2.5 w-2.5 rounded-full cursor-pointer bg-white/25"
+                className="h-2.5 w-2.5 rounded-full cursor-pointer bg-white/25 border-0 p-0 focus:outline-none focus:ring-2 focus:ring-[#c8a96e]"
               />
             ))}
           </div>

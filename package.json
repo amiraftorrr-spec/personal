@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "node server/server.js",
+    "server:dev": "node --watch server/server.js"
   },
   "dependencies": {
     "@fontsource/poppins": "^5.2.7",
