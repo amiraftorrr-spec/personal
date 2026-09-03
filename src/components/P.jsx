@@ -32,26 +32,26 @@ const projects = [
   },
   {
     id: 4,
-    title: "E-Commerce App",
-    tag: "Full Stack",
-    description: "An online store with a shopping cart and integrated payment gateway.",
-    image: "/work.webp",
-    link: "#",
+    title: "Alo Zoghal",
+    tag: "E-Commerce",
+    description: "An online charcoal and barbecue supplies store with express delivery and online ordering.",
+    image: "/alo.webp",
+    link: "https://alo-zoghal.ir",
   },
   {
     id: 5,
-    title: "Landing Page",
-    tag: "Marketing",
-    description: "A landing page with eye-catching animations built to convert visitors.",
-    image: "/work.webp",
-    link: "#",
+    title: "Wexun",
+    tag: "Digital Studio",
+    description: "A modern digital agency and studio website for branding, web development, and digital marketing.",
+    image: "/wexun.webp",
+    link: "https://wexun.vercel.app",
   },
   {
     id: 6,
     title: "Chat App",
     tag: "Real-Time",
     description: "A real-time chat application with instant messaging.",
-    image: "/work.webp                 ",
+    image: "/work.webp",
     link: "#",
   },
 ];
@@ -72,12 +72,12 @@ const ProjectCard = forwardRef(function ProjectCard({ project }, ref) {
     >
       <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/[0.07] via-transparent to-transparent" />
       <div className="pointer-events-none absolute inset-0 rounded-3xl shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]" />
-      <div className="relative h-56 w-full overflow-hidden">
+      <div className="relative h-72 sm:h-80 w-full overflow-hidden">
         <img
           src={project.image}
           alt={project.title}
           draggable={false}
-          className="w-full h-full object-cover select-none transition-transform duration-700 ease-out group-hover:scale-105"
+          className="w-full h-full object-cover object-top select-none transition-transform duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#111111] via-[#111111]/10 to-transparent" />
 
