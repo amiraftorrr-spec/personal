@@ -6,8 +6,9 @@ import {
   FaTelegramPlane,
   FaInstagram,
   FaPaperPlane,
+  FaCheckCircle,
 } from "react-icons/fa";
-import { API_BASE_URL } from "../config/api";
+import { submitContactMessage } from "../services/contactService";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -15,8 +16,6 @@ const BASE_BORDER = "rgba(200, 169, 110, 0.15)";
 
 const NOISE_BG =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")";
-
-const CONTACT_API_URL = `${API_BASE_URL}/contact`;
 
 export default function Contact() {
   const sectionRef = useRef(null);
@@ -102,30 +101,24 @@ export default function Contact() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setLoading(true);
     setError("");
 
     try {
-      const res = await fetch(CONTACT_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message || "ارسال ناموفق بود");
-      }
+      await submitContactMessage(values);
 
       setSent(true);
       setValues({ name: "", email: "", message: "" });
-      setTimeout(() => setSent(false), 4000);
+      setTimeout(() => setSent(false), 5000);
     } catch (err) {
       setError(
         typeof err?.message === "string"
           ? err.message
-          : "مشکلی پیش اومد، دوباره امتحان کن."
+          : "Something went wrong, please try again."
       );
     } finally {
       setLoading(false);
@@ -271,6 +264,16 @@ export default function Contact() {
               />
             </div>
 
+            {sent && (
+              <div className="contact-field relative z-10 p-4 rounded-xl bg-[#c8a96e]/10 border border-[#c8a96e]/40 text-[#c8a96e] flex items-center gap-3 text-sm font-medium shadow-[0_0_25px_rgba(200,169,110,0.15)] transition-all">
+                <FaCheckCircle className="text-xl shrink-0 text-[#c8a96e]" />
+                <div>
+                  <p className="font-semibold text-white">Successful!</p>
+                  <p className="text-xs text-zinc-300">Your message has been sent successfully.</p>
+                </div>
+              </div>
+            )}
+
             {error && (
               <p className="contact-field relative z-10 text-red-400 text-sm">
                 {error}
@@ -283,8 +286,12 @@ export default function Contact() {
               aria-label="Send message"
               className="cursor-hover contact-field shrink-0 relative z-10 mt-2 inline-flex items-center justify-center gap-3 rounded-full bg-[#1a1a1a] border-2 border-[#c8a96e] text-[#c8a96e] font-semibold py-4 transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_30px_#c8a96e80] hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#c8a96e] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-[#1a1a1a] disabled:hover:text-[#c8a96e]"
             >
-              {loading ? "Sending..." : sent ? "Message Sent" : "Send Message"}
-              <FaPaperPlane className="text-sm transition-transform duration-300 group-hover:translate-x-1" />
+              {loading ? "Sending..." : sent ? "Successful!" : "Send Message"}
+              {sent ? (
+                <FaCheckCircle className="text-sm text-[#c8a96e]" />
+              ) : (
+                <FaPaperPlane className="text-sm transition-transform duration-300 group-hover:translate-x-1" />
+              )}
             </button>
           </form>
         </div>

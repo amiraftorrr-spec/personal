@@ -46,7 +46,7 @@ function App() {
           <Suspense
             fallback={
               <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center text-[#c8a96e]">
-                در حال بارگذاری پنل مدیریت...
+                Loading Admin Panel...
               </div>
             }
           >
