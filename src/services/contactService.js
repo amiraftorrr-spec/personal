@@ -1,8 +1,8 @@
-import { supabase, isSupabaseConfigured } from "../config/supabase";
-import { API_BASE_URL } from "../config/api";
+import { supabase, isSupabaseConfigured } from "../config/supabase.js";
+import { API_BASE_URL } from "../config/api.js";
 
-const ADMIN_USERNAME = import.meta.env.VITE_ADMIN_USERNAME || "amiraftor";
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "amir431229";
+const ADMIN_USERNAME = import.meta.env?.VITE_ADMIN_USERNAME || "amiraftor";
+const ADMIN_PASSWORD = import.meta.env?.VITE_ADMIN_PASSWORD || "amir431229";
 
 // نرمال‌سازی فیلدهای پیام برای سازگاری بین Supabase و Express
 const normalizeMessage = (msg) => {
