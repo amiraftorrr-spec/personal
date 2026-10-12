@@ -18,7 +18,15 @@ import {
   FaSearch,
   FaFilter,
 } from "react-icons/fa";
-import { API_BASE_URL } from "../config/api";
+import {
+  adminLogin,
+  getAdminMessages,
+  toggleMessageRead,
+  deleteAdminMessage,
+  replyToAdminMessage,
+  subscribeToNewMessages,
+} from "../services/contactService";
+import { isSupabaseConfigured } from "../config/supabase";
 
 export default function AdminPanel() {
   const [token, setToken] = useState(() => localStorage.getItem("admin_token") || "");
@@ -40,6 +48,12 @@ export default function AdminPanel() {
   useEffect(() => {
     if (token) {
       fetchMessages();
+      const unsubscribe = subscribeToNewMessages(() => {
+        fetchMessages();
+      });
+      return () => {
+        if (typeof unsubscribe === "function") unsubscribe();
+      };
     }
   }, [token]);
 
@@ -49,23 +63,13 @@ export default function AdminPanel() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || "نام کاربری یا رمز عبور اشتباه است.");
-      }
-
+      const data = await adminLogin(username, password);
       localStorage.setItem("admin_token", data.token);
       setToken(data.token);
       setUsername("");
       setPassword("");
     } catch (err) {
-      setLoginError(err.message || "خطا در برقراری ارتباط با سرور");
+      setLoginError(err.message || "Failed to connect to the server.");
     } finally {
       setLoading(false);
     }
@@ -81,18 +85,7 @@ export default function AdminPanel() {
   const fetchMessages = async () => {
     setFetchingMessages(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/messages`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (res.status === 401 || res.status === 403) {
-        handleLogout();
-        return;
-      }
-
-      const data = await res.json();
+      const data = await getAdminMessages(token);
       if (data.success) {
         setMessages(data.messages || []);
         if (selectedMessage) {
@@ -101,6 +94,10 @@ export default function AdminPanel() {
         }
       }
     } catch (err) {
+      if (err.message === "UNAUTHORIZED") {
+        handleLogout();
+        return;
+      }
       console.error("Error fetching messages:", err);
     } finally {
       setFetchingMessages(false);
@@ -110,22 +107,12 @@ export default function AdminPanel() {
   const toggleReadStatus = async (id, currentStatus, e) => {
     if (e) e.stopPropagation();
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/messages/${id}/read`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ read: !currentStatus }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMessages((prev) =>
-          prev.map((m) => (m.id === id ? { ...m, read: !currentStatus } : m))
-        );
-        if (selectedMessage?.id === id) {
-          setSelectedMessage((prev) => ({ ...prev, read: !currentStatus }));
-        }
+      await toggleMessageRead(id, currentStatus, token);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, read: !currentStatus } : m))
+      );
+      if (selectedMessage?.id === id) {
+        setSelectedMessage((prev) => ({ ...prev, read: !currentStatus }));
       }
     } catch (err) {
       console.error("Error updating read status:", err);
@@ -134,21 +121,13 @@ export default function AdminPanel() {
 
   const handleDeleteMessage = async (id, e) => {
     if (e) e.stopPropagation();
-    if (!window.confirm("آیا از حذف این پیام مطمئن هستید؟")) return;
+    if (!window.confirm("Are you sure you want to delete this message?")) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/messages/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMessages((prev) => prev.filter((m) => m.id !== id));
-        if (selectedMessage?.id === id) {
-          setSelectedMessage(null);
-        }
+      await deleteAdminMessage(id, token);
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      if (selectedMessage?.id === id) {
+        setSelectedMessage(null);
       }
     } catch (err) {
       console.error("Error deleting message:", err);
@@ -163,27 +142,17 @@ export default function AdminPanel() {
     setReplySuccess("");
 
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/admin/messages/${selectedMessage.id}/reply`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ replyText }),
-        }
+      const data = await replyToAdminMessage(
+        selectedMessage.id,
+        replyText,
+        selectedMessage,
+        token
       );
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || "خطا در ثبت پاسخ");
-      }
 
       setReplySuccess(
         data.emailSent
-          ? "پاسخ با موفقیت ثبت و ایمیل برای کاربر ارسال شد!"
-          : "پاسخ ثبت شد (همچنین می‌توانید مستقیماً به ایمیل کاربر ارسال کنید)."
+          ? "Reply recorded and email sent to user!"
+          : "Reply recorded successfully!"
       );
       setReplyText("");
 
@@ -196,7 +165,7 @@ export default function AdminPanel() {
         );
       }
     } catch (err) {
-      alert(err.message || "مشکلی در ارسال پیش آمد");
+      alert(err.message || "An error occurred while sending the reply.");
     } finally {
       setReplying(false);
     }
@@ -215,15 +184,15 @@ export default function AdminPanel() {
 
   const unreadCount = messages.filter((m) => !m.read).length;
 
-  // ۱. فرم ورود در صورتی که توکن موجود نباشد
+  // 1. Login form if token is not present
   if (!token) {
     return (
       <div
-        dir="rtl"
+        dir="ltr"
         className="min-h-screen bg-[#0d0d0d] text-white flex items-center justify-center p-4 selection:bg-[#c8a96e] selection:text-black font-sans"
       >
         <div className="w-full max-w-md bg-[#161616] border border-[#c8a96e]/20 rounded-2xl p-8 shadow-2xl relative overflow-hidden backdrop-blur-sm">
-          {/* افکت نور طلایی */}
+          {/* Gold glow effects */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#c8a96e]/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-[#c8a96e]/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -232,10 +201,10 @@ export default function AdminPanel() {
               <FaShieldAlt />
             </div>
             <h1 className="text-2xl font-bold text-[#f5efe6] tracking-wide">
-              ورود به پنل مدیریت
+              Admin Panel Login
             </h1>
             <p className="text-xs text-neutral-400 mt-2">
-              مدیریت پیام‌ها و فرم تماس پورتفولیو امیر
+              Manage contact messages for Amir's Portfolio
             </p>
           </div>
 
@@ -248,7 +217,7 @@ export default function AdminPanel() {
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-xs text-neutral-300 mb-2 font-medium">
-                نام کاربری
+                Username
               </label>
               <div className="relative">
                 <input
@@ -257,15 +226,15 @@ export default function AdminPanel() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="amiraftor"
-                  className="w-full bg-[#202020] border border-neutral-700/60 focus:border-[#c8a96e] rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-neutral-500 focus:outline-none transition"
+                  className="w-full bg-[#202020] border border-neutral-700/60 focus:border-[#c8a96e] rounded-xl px-4 py-3 pl-10 text-sm text-white placeholder-neutral-500 focus:outline-none transition"
                 />
-                <FaUser className="absolute right-3.5 top-3.5 text-neutral-500 text-sm" />
+                <FaUser className="absolute left-3.5 top-3.5 text-neutral-500 text-sm" />
               </div>
             </div>
 
             <div>
               <label className="block text-xs text-neutral-300 mb-2 font-medium">
-                رمز عبور
+                Password
               </label>
               <div className="relative">
                 <input
@@ -274,9 +243,9 @@ export default function AdminPanel() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-[#202020] border border-neutral-700/60 focus:border-[#c8a96e] rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-neutral-500 focus:outline-none transition"
+                  className="w-full bg-[#202020] border border-neutral-700/60 focus:border-[#c8a96e] rounded-xl px-4 py-3 pl-10 text-sm text-white placeholder-neutral-500 focus:outline-none transition"
                 />
-                <FaLock className="absolute right-3.5 top-3.5 text-neutral-500 text-sm" />
+                <FaLock className="absolute left-3.5 top-3.5 text-neutral-500 text-sm" />
               </div>
             </div>
 
@@ -289,8 +258,8 @@ export default function AdminPanel() {
                 <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>ورود به پنل</span>
-                  <FaArrowRight className="rotate-180 text-xs" />
+                  <span>Login to Dashboard</span>
+                  <FaArrowRight className="text-xs" />
                 </>
               )}
             </button>
@@ -301,8 +270,8 @@ export default function AdminPanel() {
               to="/"
               className="text-xs text-[#c8a96e]/80 hover:text-[#c8a96e] transition flex items-center justify-center gap-1.5"
             >
+              <span>Back to main website</span>
               <FaArrowRight className="text-[10px]" />
-              <span>بازگشت به وب‌سایت اصلی</span>
             </Link>
           </div>
         </div>
@@ -310,13 +279,13 @@ export default function AdminPanel() {
     );
   }
 
-  // ۲. داشبورد مدیریت پیام‌ها
+  // 2. Dashboard for managing messages
   return (
     <div
-      dir="rtl"
+      dir="ltr"
       className="min-h-screen bg-[#0f0f0f] text-neutral-200 font-sans flex flex-col selection:bg-[#c8a96e] selection:text-black"
     >
-      {/* هدر ادمین */}
+      {/* Admin Header */}
       <header className="bg-[#161616] border-b border-neutral-800 sticky top-0 z-30 px-6 py-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-[#c8a96e]/10 border border-[#c8a96e]/30 flex items-center justify-center text-[#c8a96e] font-bold text-lg">
@@ -324,13 +293,22 @@ export default function AdminPanel() {
           </div>
           <div>
             <h1 className="text-base font-bold text-white flex items-center gap-2">
-              پنل مدیریت پیام‌های امیر
+              Amir's Messages Admin Panel
               <span className="text-[10px] bg-[#c8a96e]/20 text-[#c8a96e] px-2 py-0.5 rounded-full border border-[#c8a96e]/30">
                 Admin
               </span>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                  isSupabaseConfigured
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                    : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                }`}
+              >
+                {isSupabaseConfigured ? "Cloud DB (Supabase)" : "Local Server (Express)"}
+              </span>
             </h1>
             <p className="text-xs text-neutral-400">
-              پیام‌های دریافتی از فرم تماس وب‌سایت
+              Messages received from website contact form
             </p>
           </div>
         </div>
@@ -341,7 +319,7 @@ export default function AdminPanel() {
             target="_blank"
             className="flex items-center gap-1.5 text-xs text-neutral-300 hover:text-[#c8a96e] bg-[#222] hover:bg-[#282828] px-3.5 py-2 rounded-xl transition border border-neutral-700/50"
           >
-            <span>مشاهده سایت</span>
+            <span>View Site</span>
             <FaExternalLinkAlt className="text-[10px]" />
           </Link>
           <button
@@ -349,7 +327,7 @@ export default function AdminPanel() {
             className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 bg-red-950/30 hover:bg-red-900/40 border border-red-800/40 px-3.5 py-2 rounded-xl transition"
           >
             <FaSignOutAlt className="text-xs" />
-            <span>خروج</span>
+            <span>Logout</span>
           </button>
         </div>
       </header>
@@ -358,17 +336,17 @@ export default function AdminPanel() {
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* ستون راست: لیست پیام‌ها و فیلترها */}
         <div className="lg:col-span-5 flex flex-col bg-[#161616] border border-neutral-800 rounded-2xl overflow-hidden h-[calc(100vh-140px)] min-h-[500px]">
-          {/* سرچ و فیلتر */}
+          {/* Search and Filter */}
           <div className="p-4 border-b border-neutral-800 bg-[#1a1a1a]/80 space-y-3">
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="جستجو در پیام‌ها، نام، ایمیل..."
-                className="w-full bg-[#111] border border-neutral-700/70 focus:border-[#c8a96e] rounded-xl px-4 py-2.5 pr-9 text-xs text-white placeholder-neutral-500 focus:outline-none transition"
+                placeholder="Search messages by name, email, or content..."
+                className="w-full bg-[#111] border border-neutral-700/70 focus:border-[#c8a96e] rounded-xl px-4 py-2.5 pl-9 text-xs text-white placeholder-neutral-500 focus:outline-none transition"
               />
-              <FaSearch className="absolute right-3 top-3 text-neutral-500 text-xs" />
+              <FaSearch className="absolute left-3 top-3 text-neutral-500 text-xs" />
             </div>
 
             <div className="flex items-center justify-between text-xs">
@@ -381,7 +359,7 @@ export default function AdminPanel() {
                       : "text-neutral-400 hover:text-white"
                   }`}
                 >
-                  همه ({messages.length})
+                  All ({messages.length})
                 </button>
                 <button
                   onClick={() => setFilterType("unread")}
@@ -391,7 +369,7 @@ export default function AdminPanel() {
                       : "text-neutral-400 hover:text-white"
                   }`}
                 >
-                  <span>خوانده نشده</span>
+                  <span>Unread</span>
                   {unreadCount > 0 && (
                     <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
                       {unreadCount}
@@ -406,28 +384,28 @@ export default function AdminPanel() {
                       : "text-neutral-400 hover:text-white"
                   }`}
                 >
-                  خوانده شده
+                  Read
                 </button>
               </div>
 
               <button
                 onClick={fetchMessages}
-                title="بروزرسانی لیست"
+                title="Refresh message list"
                 className="text-xs text-neutral-400 hover:text-[#c8a96e] px-2 py-1 transition"
               >
-                {fetchingMessages ? "در حال دریافت..." : "بروزرسانی ↻"}
+                {fetchingMessages ? "Fetching..." : "Refresh ↻"}
               </button>
             </div>
           </div>
 
-          {/* لیست پیام‌ها */}
+          {/* Message List */}
           <div className="flex-1 overflow-y-auto divide-y divide-neutral-800/60">
             {filteredMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center p-8 text-center text-neutral-500">
                 <FaInbox className="text-4xl mb-3 text-neutral-600" />
-                <p className="text-sm font-medium">هیچ پیامی یافت نشد</p>
+                <p className="text-sm font-medium">No messages found</p>
                 <p className="text-xs text-neutral-600 mt-1">
-                  پیام‌های ارسالی کاربران از فرم سایت اینجا نمایش داده می‌شوند.
+                  Messages submitted via the contact form will appear here.
                 </p>
               </div>
             ) : (
@@ -442,7 +420,7 @@ export default function AdminPanel() {
                     }}
                     className={`p-4 cursor-pointer transition flex flex-col gap-2 relative ${
                       isSelected
-                        ? "bg-[#222222] border-r-4 border-[#c8a96e]"
+                        ? "bg-[#222222] border-l-4 border-[#c8a96e]"
                         : "hover:bg-[#1a1a1a]"
                     } ${!msg.read ? "bg-[#1f1a14]/40" : ""}`}
                   >
@@ -451,7 +429,7 @@ export default function AdminPanel() {
                         {!msg.read && (
                           <span
                             className="w-2.5 h-2.5 rounded-full bg-[#c8a96e] animate-pulse"
-                            title="خوانده نشده"
+                            title="Unread"
                           />
                         )}
                         <span className="font-semibold text-sm text-white">
@@ -460,7 +438,7 @@ export default function AdminPanel() {
                       </div>
                       <span className="text-[11px] text-neutral-500 flex items-center gap-1">
                         <FaClock className="text-[9px]" />
-                        {new Date(msg.createdAt).toLocaleDateString("fa-IR", {
+                        {new Date(msg.createdAt).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                           hour: "2-digit",
@@ -482,10 +460,10 @@ export default function AdminPanel() {
                         {msg.replies && msg.replies.length > 0 ? (
                           <span className="text-green-400 flex items-center gap-1">
                             <FaReply className="text-[9px]" />
-                            {msg.replies.length} پاسخ داده شده
+                            {msg.replies.length} {msg.replies.length === 1 ? "reply" : "replies"}
                           </span>
                         ) : (
-                          <span className="text-neutral-500">بدون پاسخ</span>
+                          <span className="text-neutral-500">No reply</span>
                         )}
                       </span>
 
@@ -494,8 +472,8 @@ export default function AdminPanel() {
                           onClick={(e) => toggleReadStatus(msg.id, msg.read, e)}
                           title={
                             msg.read
-                              ? "علامت‌گذاری به عنوان خوانده‌نشده"
-                              : "علامت‌گذاری به عنوان خوانده‌شده"
+                              ? "Mark as unread"
+                              : "Mark as read"
                           }
                           className="p-1.5 text-neutral-400 hover:text-[#c8a96e] transition rounded-lg hover:bg-neutral-800"
                         >
@@ -503,7 +481,7 @@ export default function AdminPanel() {
                         </button>
                         <button
                           onClick={(e) => handleDeleteMessage(msg.id, e)}
-                          title="حذف پیام"
+                          title="Delete message"
                           className="p-1.5 text-neutral-500 hover:text-red-400 transition rounded-lg hover:bg-neutral-800"
                         >
                           <FaTrash className="text-xs" />
@@ -517,11 +495,11 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* ستون چپ: جزئیات پیام و بخش پاسخ دادن */}
+        {/* Left Column: Message Details and Reply */}
         <div className="lg:col-span-7 flex flex-col bg-[#161616] border border-neutral-800 rounded-2xl overflow-hidden h-[calc(100vh-140px)] min-h-[500px]">
           {selectedMessage ? (
             <div className="flex flex-col h-full">
-              {/* هدر پیام انتخابی */}
+              {/* Selected message header */}
               <div className="p-5 border-b border-neutral-800 bg-[#1a1a1a] flex items-start justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -538,47 +516,48 @@ export default function AdminPanel() {
                     <span>•</span>
                     <span className="flex items-center gap-1">
                       <FaClock className="text-[10px]" />
-                      {new Date(selectedMessage.createdAt).toLocaleString(
-                        "fa-IR"
-                      )}
+                      {new Date(selectedMessage.createdAt).toLocaleString("en-US", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <a
-                    href={`mailto:${selectedMessage.email}?subject=پاسخ به پیام شما&body=سلام ${selectedMessage.name} عزیز،%0D%0A%0D%0A`}
+                    href={`mailto:${selectedMessage.email}?subject=Reply to your message&body=Hi ${selectedMessage.name},%0D%0A%0D%0A`}
                     className="text-xs bg-[#c8a96e]/10 text-[#c8a96e] border border-[#c8a96e]/30 px-3 py-1.5 rounded-xl hover:bg-[#c8a96e]/20 transition flex items-center gap-1.5"
                   >
-                    <span>ایمیل مستقیم</span>
+                    <span>Direct Email</span>
                     <FaExternalLinkAlt className="text-[10px]" />
                   </a>
                   <button
                     onClick={() => handleDeleteMessage(selectedMessage.id)}
                     className="p-2 text-neutral-400 hover:text-red-400 rounded-xl hover:bg-neutral-800 transition"
-                    title="حذف پیام"
+                    title="Delete message"
                   >
                     <FaTrash className="text-sm" />
                   </button>
                 </div>
               </div>
 
-              {/* متن پیام و سابقه پاسخ‌ها */}
+              {/* Message content and replies history */}
               <div className="flex-1 p-5 overflow-y-auto space-y-6">
                 <div>
                   <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider block mb-2">
-                    متن پیام کاربر:
+                    User Message:
                   </label>
                   <div className="p-4 rounded-xl bg-[#202020] border border-neutral-700/60 text-neutral-200 text-sm leading-relaxed whitespace-pre-wrap select-text">
                     {selectedMessage.message}
                   </div>
                 </div>
 
-                {/* سوابق پاسخ‌ها */}
+                {/* Reply history */}
                 {selectedMessage.replies && selectedMessage.replies.length > 0 && (
                   <div className="space-y-3">
                     <label className="text-xs font-semibold text-[#c8a96e] uppercase tracking-wider block">
-                      پاسخ‌های ارسال شده شما ({selectedMessage.replies.length}):
+                      Previous Replies ({selectedMessage.replies.length}):
                     </label>
                     {selectedMessage.replies.map((rep, idx) => (
                       <div
@@ -586,9 +565,12 @@ export default function AdminPanel() {
                         className="p-4 rounded-xl bg-[#2a2418]/40 border border-[#c8a96e]/20 text-neutral-200 text-sm space-y-1.5"
                       >
                         <div className="flex items-center justify-between text-[11px] text-[#c8a96e]">
-                          <span className="font-semibold">پاسخ امیر</span>
+                          <span className="font-semibold">Amir's Reply</span>
                           <span>
-                            {new Date(rep.createdAt).toLocaleString("fa-IR")}
+                            {new Date(rep.createdAt).toLocaleString("en-US", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
                           </span>
                         </div>
                         <p className="text-xs text-neutral-300 whitespace-pre-wrap leading-relaxed">
@@ -600,7 +582,7 @@ export default function AdminPanel() {
                 )}
               </div>
 
-              {/* فرم ارسال پاسخ */}
+              {/* Reply form */}
               <div className="p-4 border-t border-neutral-800 bg-[#1a1a1a]">
                 {replySuccess && (
                   <div className="mb-3 p-2.5 bg-green-500/10 border border-green-500/30 text-green-400 text-xs rounded-xl flex items-center justify-between">
@@ -616,20 +598,20 @@ export default function AdminPanel() {
 
                 <form onSubmit={handleSendReply} className="space-y-3">
                   <label className="block text-xs font-medium text-neutral-300">
-                    پاسخ به {selectedMessage.name}:
+                    Reply to {selectedMessage.name}:
                   </label>
                   <textarea
                     rows={3}
                     required
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    placeholder={`متن پاسخ خود را اینجا بنویسید (به ایمیل ${selectedMessage.email} نیز ثبت می‌شود)...`}
+                    placeholder={`Write your reply here (saved in dashboard and logged for ${selectedMessage.email})...`}
                     className="w-full bg-[#111] border border-neutral-700 focus:border-[#c8a96e] rounded-xl p-3 text-xs text-white placeholder-neutral-500 focus:outline-none transition resize-none"
                   />
 
                   <div className="flex items-center justify-between">
                     <p className="text-[11px] text-neutral-500">
-                      پاسخ در پنل ذخیره شده و به ایمیل کاربر ایمیل می‌شود.
+                      Reply is saved in dashboard and email can be sent directly.
                     </p>
                     <button
                       type="submit"
@@ -640,8 +622,8 @@ export default function AdminPanel() {
                         <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <>
-                          <FaPaperPlane className="text-xs rotate-180" />
-                          <span>ارسال پاسخ</span>
+                          <FaPaperPlane className="text-xs" />
+                          <span>Send Reply</span>
                         </>
                       )}
                     </button>
@@ -655,10 +637,10 @@ export default function AdminPanel() {
                 <FaReply />
               </div>
               <h3 className="text-base font-semibold text-neutral-400">
-                پیامی انتخاب نشده است
+                No message selected
               </h3>
               <p className="text-xs text-neutral-600 mt-1 max-w-sm">
-                برای مشاهده متن کامل پیام، اطلاعات تماس و ارسال پاسخ، یک پیام را از لیست سمت راست انتخاب کنید.
+                Select a message from the list on the left to view details and send a reply.
               </p>
             </div>
           )}
