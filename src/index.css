@@ -1,15 +1,8 @@
 @import "tailwindcss";
 
-html {
-  scroll-behavior: smooth;
-}
-
 body {
   background: #111111;
   font-family: "Poppins", sans-serif;
-
-  
-
   overflow-x: hidden;
 }
 ::selection {
@@ -44,4 +37,22 @@ body {
 html {
   scrollbar-width: thin;
   scrollbar-color: #c8a96e #111111;
+}
+
+/* Accessibility: Focus visible */
+:focus-visible {
+  outline: 2px solid #c8a96e;
+  outline-offset: 3px;
+}
+
+/* Accessibility: Respect Reduced Motion Preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

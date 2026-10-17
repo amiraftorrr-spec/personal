@@ -26,6 +26,7 @@ export default function About() {
           scale: 0.8,
           rotate: -10,
           ease: "power3.out",
+          force3D: true,
           scrollTrigger: {
             trigger: sectionRef.current,
             start: "top 75%",
@@ -39,6 +40,7 @@ export default function About() {
           x: 150,
           opacity: 0,
           ease: "power3.out",
+          force3D: true,
           scrollTrigger: {
             trigger: sectionRef.current,
             start: "top 75%",
@@ -48,7 +50,7 @@ export default function About() {
         });
 
         // Floating Image
-        gsap.to(imageRef.current, {
+        const floatAnim = gsap.to(imageRef.current, {
           y: -10,
           duration: 3,
           repeat: -1,
@@ -56,7 +58,7 @@ export default function About() {
           ease: "sine.inOut",
         });
 
-        gsap.to(".orb", {
+        const orbAnim = gsap.to(".orb", {
           y: -40,
           duration: 4,
           stagger: 0.8,
@@ -76,7 +78,7 @@ export default function About() {
           },
         });
 
-        gsap.to(".star", {
+        const starAnim = gsap.to(".star", {
           opacity: 0.15,
           scale: 0.4,
           stagger: {
@@ -85,6 +87,33 @@ export default function About() {
             yoyo: true,
           },
           duration: 1.8,
+        });
+
+        // توقف انیمیشن‌های تکرارشونده وقتی سکشن خارج از دید است
+        ScrollTrigger.create({
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          onLeave: () => {
+            floatAnim.pause();
+            orbAnim.pause();
+            starAnim.pause();
+          },
+          onEnter: () => {
+            floatAnim.play();
+            orbAnim.play();
+            starAnim.play();
+          },
+          onEnterBack: () => {
+            floatAnim.play();
+            orbAnim.play();
+            starAnim.play();
+          },
+          onLeaveBack: () => {
+            floatAnim.pause();
+            orbAnim.pause();
+            starAnim.pause();
+          },
         });
       }, sectionRef);
 
@@ -98,12 +127,17 @@ export default function About() {
   const handleContactClick = () => {
     const target = document.getElementById("contact");
     if (target) {
-      lenis.scrollTo(target, { immediate: true });
+      if (lenis) {
+        lenis.scrollTo(target, { duration: 1 });
+      } else {
+        target.scrollIntoView({ behavior: "smooth" });
+      }
     }
   };
 
   return (
     <section
+      id="about"
       ref={sectionRef}
       className="relative min-h-screen bg-[#111111] flex items-center justify-center px-6 sm:px-8 md:px-20 py-20 lg:py-0"
     >
@@ -111,7 +145,7 @@ export default function About() {
 
 {/* Background */}
 
-<div className="absolute inset-0 overflow-hidden pointer-events-none">
+<div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
 
   <FaCode
     className="
@@ -184,6 +218,10 @@ export default function About() {
               <img
                 src="/me.webp"
                 alt="Amir Aftor - Frontend Developer Portfolio"
+                loading="lazy"
+                decoding="async"
+                width="320"
+                height="320"
                 draggable={false}
                 className="w-full h-full object-cover select-none"
               />

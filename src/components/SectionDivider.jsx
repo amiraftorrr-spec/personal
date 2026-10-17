@@ -24,14 +24,12 @@ export default function SectionDivider() {
           trigger: lineRef.current,
           start: "top center",
           end: "bottom top",
-          scrub: true,
+          scrub: 0.5,
           invalidateOnRefresh: true,
         },
       }
     );
   });
-
-  ScrollTrigger.refresh();
 
   return () => ctx.revert();
 }, []);
@@ -52,6 +50,7 @@ export default function SectionDivider() {
       via-[#c8a96e]
       to-transparent
       shadow-[0_0_20px_#c8a96e]
+      will-change-transform
       "
       />
 
