@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { FaChevronDown, FaArrowRight } from "react-icons/fa";
+import lenis from "../lenis";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -12,7 +13,7 @@ const projects = [
     tag: "E-Commerce",
     description: "An online game store with a modern design and smooth shopping experience.",
     image: "/p3.webp",
-    link: "https://gamingtor.vercel.app",
+    link: "https://gamingtorr.vercel.app",
   },
   {
     id: 2,
@@ -36,7 +37,7 @@ const projects = [
     tag: "E-Commerce",
     description: "An online charcoal and barbecue supplies store with express delivery and online ordering.",
     image: "/alo.webp",
-    link: "https://alo-zoghal.ir",
+    link: "https://alo-zoghal.com",
   },
   {
     id: 5,
@@ -67,9 +68,17 @@ const ProjectCard = forwardRef(function ProjectCard({ project }, ref) {
   return (
     <div
       ref={ref}
-      className="project-card cursor-hover group relative rounded-3xl overflow-hidden bg-white/[0.04] backdrop-blur-xl border shadow-[0_8px_32px_rgba(0,0,0,0.28)] will-change-[border-color,box-shadow]"
-      style={{ borderColor: BASE_BORDER }}
+      className="project-card cursor-hover group relative rounded-3xl overflow-hidden bg-white/[0.04] backdrop-blur-sm border shadow-[0_8px_32px_rgba(0,0,0,0.28)]"
+      style={{ borderColor: BASE_BORDER, transform: "translateZ(0)" }}
     >
+      {/* لایه گلو برای هاور پروکسیمیتی بر پایه GPU بدون لاگ */}
+      <div
+        className="card-glow pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-300"
+        style={{
+          boxShadow: "0 0 35px rgba(200, 169, 110, 0.35)",
+          border: "1px solid rgba(200, 169, 110, 0.6)",
+        }}
+      />
       <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/[0.07] via-transparent to-transparent" />
       <div className="pointer-events-none absolute inset-0 rounded-3xl shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]" />
       <div className="relative h-72 sm:h-80 w-full overflow-hidden">
@@ -77,6 +86,8 @@ const ProjectCard = forwardRef(function ProjectCard({ project }, ref) {
           src={project.image}
           alt={project.title}
           draggable={false}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover object-top select-none transition-transform duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#111111] via-[#111111]/10 to-transparent" />
@@ -112,7 +123,9 @@ const ProjectCard = forwardRef(function ProjectCard({ project }, ref) {
 
 function ProjectRow({ projects: rowProjects, rowRef }) {
   const cardsRef = useRef([]);
-  cardsRef.current = [];
+  const centersRef = useRef([]);
+  const rafRef = useRef(null);
+  const isHoveringRef = useRef(false);
 
   const addCardRef = (el) => {
     if (el && !cardsRef.current.includes(el)) {
@@ -120,43 +133,59 @@ function ProjectRow({ projects: rowProjects, rowRef }) {
     }
   };
 
-  const handleMouseMove = (e) => {
-    cardsRef.current.forEach((card) => {
-      if (!card) return;
+  const updateCenters = () => {
+    centersRef.current = cardsRef.current.map((card) => {
+      if (!card) return null;
       const rect = card.getBoundingClientRect();
-      const cardCenterX = rect.left + rect.width / 2;
-      const distance = Math.abs(e.clientX - cardCenterX);
-      const influence = rect.width * 1.15;
-      const proximity = Math.max(0, 1 - distance / influence);
+      return {
+        centerX: rect.left + rect.width / 2,
+        width: rect.width,
+        glowEl: card.querySelector(".card-glow"),
+      };
+    });
+  };
 
-      gsap.to(card, {
-        borderColor: `rgba(200, 169, 110, ${0.15 + proximity * 0.45})`,
-        boxShadow: proximity > 0.02
-          ? `0 0 ${Math.round(36 * proximity)}px rgba(200, 169, 110, ${(proximity * 0.22).toFixed(3)})`
-          : "0 0 0px rgba(200, 169, 110, 0)",
-        duration: 0.45,
-        ease: "power2.out",
-        overwrite: "auto",
+  const handleMouseEnter = () => {
+    isHoveringRef.current = true;
+    updateCenters();
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isHoveringRef.current) return;
+    if (rafRef.current) return;
+    const clientX = e.clientX;
+
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      if (!centersRef.current.length) updateCenters();
+
+      centersRef.current.forEach((info) => {
+        if (!info || !info.glowEl) return;
+        const distance = Math.abs(clientX - info.centerX);
+        const influence = info.width * 1.15;
+        const proximity = Math.max(0, 1 - distance / influence);
+        info.glowEl.style.opacity = proximity > 0.02 ? (proximity * 0.95).toFixed(3) : "0";
       });
     });
   };
 
   const handleMouseLeave = () => {
-    cardsRef.current.forEach((card) => {
-      if (!card) return;
-      gsap.to(card, {
-        borderColor: BASE_BORDER,
-        boxShadow: "0 0 0px rgba(200, 169, 110, 0)",
-        duration: 0.5,
-        ease: "power2.out",
-        overwrite: "auto",
-      });
+    isHoveringRef.current = false;
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    centersRef.current.forEach((info) => {
+      if (info && info.glowEl) {
+        info.glowEl.style.opacity = "0";
+      }
     });
   };
 
   return (
     <div
       ref={rowRef}
+      onMouseEnter={handleMouseEnter}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className="relative z-[60] grid grid-cols-1 md:grid-cols-3 gap-8 w-full"
@@ -191,20 +220,31 @@ export default function Projects() {
           opacity: 0,
           duration: 1,
           ease: "power3.out",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 80%" },
+          force3D: true,
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 80%",
+            once: true,
+          },
         });
 
-        const firstRowCards = firstRowRef.current.querySelectorAll(".project-card");
-
-        gsap.from(firstRowCards, {
-          y: 90,
-          opacity: 0,
-          scale: 0.92,
-          duration: 1,
-          stagger: 0.15,
-          ease: "power4.out",
-          scrollTrigger: { trigger: firstRowRef.current, start: "top 85%" },
-        });
+        const firstRowCards = firstRowRef.current?.querySelectorAll(".project-card");
+        if (firstRowCards?.length) {
+          gsap.from(firstRowCards, {
+            y: 90,
+            opacity: 0,
+            scale: 0.92,
+            duration: 1,
+            stagger: 0.15,
+            ease: "power4.out",
+            force3D: true,
+            scrollTrigger: {
+              trigger: firstRowRef.current,
+              start: "top 85%",
+              once: true,
+            },
+          });
+        }
       }, sectionRef);
 
       return () => ctx.revert();
@@ -228,34 +268,48 @@ export default function Projects() {
             duration: 0.6,
             ease: "power3.out",
             onComplete: () => {
-              extraRowRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              });
+              ScrollTrigger.refresh();
+              if (lenis) {
+                lenis.scrollTo(extraRowRef.current, {
+                  offset: -80,
+                  duration: 0.8,
+                });
+              } else {
+                extraRowRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }
             },
           }
         );
 
         gsap.fromTo(
           cards,
-          { y: 90, opacity: 0, scale: 0.9 },
+          { y: 70, opacity: 0, scale: 0.94 },
           {
             y: 0,
             opacity: 1,
             scale: 1,
-            duration: 0.8,
-            stagger: 0.15,
-            delay: 0.15,
-            ease: "back.out(1.6)",
+            duration: 0.7,
+            stagger: 0.12,
+            delay: 0.1,
+            ease: "back.out(1.4)",
+            force3D: true,
           }
         );
       } else {
         gsap.set(extraRowRef.current, { height: "auto", opacity: 1 });
         gsap.set(cards, { y: 0, opacity: 1, scale: 1 });
-        extraRowRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
+        ScrollTrigger.refresh();
+        if (lenis) {
+          lenis.scrollTo(extraRowRef.current, { offset: -40 });
+        } else {
+          extraRowRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
       }
     }
   }, [open]);
@@ -272,9 +326,12 @@ export default function Projects() {
         gsap.to(extraRowRef.current, {
           height: 0,
           opacity: 0,
-          duration: 0.5,
+          duration: 0.45,
           ease: "power3.in",
-          onComplete: () => setOpen(false),
+          onComplete: () => {
+            setOpen(false);
+            ScrollTrigger.refresh();
+          },
         });
       } else {
         setOpen(true);
@@ -284,6 +341,7 @@ export default function Projects() {
 
       if (open) {
         setOpen(false);
+        ScrollTrigger.refresh();
       } else {
         setOpen(true);
       }
@@ -296,7 +354,14 @@ export default function Projects() {
       ref={sectionRef}
       className="relative min-h-screen bg-[#111111] py-32 px-8 md:px-24 overflow-hidden"
     >
-      <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-[#c8a96e]/10 blur-[160px] pointer-events-none" />
+      <div
+        className="pointer-events-none absolute top-10 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full"
+        style={{
+          background: "radial-gradient(circle at center, rgba(200, 169, 110, 0.16) 0%, rgba(200, 169, 110, 0.05) 40%, transparent 70%)",
+          transform: "translate3d(-50%, 0, 0)",
+          contain: "paint",
+        }}
+      />
 
       <div ref={headingRef} className="text-center mb-20 relative z-10">
         <p className="uppercase tracking-[8px] text-[#c8a96e] mb-6">Portfolio</p>

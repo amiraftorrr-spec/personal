@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import lenis from "../lenis";
+
+gsap.registerPlugin(ScrollTrigger);
 import {
   FaEnvelope,
   FaTelegramPlane,
@@ -28,41 +31,37 @@ export default function Footer() {
 
     // انیمیشن فقط تو دسکتاپ (>=1024px) اجرا میشه
     mm.add("(min-width: 1024px)", () => {
-      const cols = colsRef.current.querySelectorAll(".footer-col");
+      const cols = colsRef.current?.querySelectorAll(".footer-col");
+      if (!cols?.length) return;
 
-      gsap.set(cols, { y: 40 });
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              gsap.to(cols, {
-                y: 0,
-                opacity: 1,
-                duration: 0.9,
-                stagger: 0.15,
-                ease: "power3.out",
-              });
-              observer.disconnect();
-            }
-          });
-        },
+      gsap.fromTo(
+        cols,
+        { y: 40, opacity: 0 },
         {
-          threshold: 0.15,
-          rootMargin: "0px 0px -10% 0px",
+          y: 0,
+          opacity: 1,
+          duration: 0.9,
+          stagger: 0.15,
+          ease: "power3.out",
+          force3D: true,
+          scrollTrigger: {
+            trigger: footerRef.current,
+            start: "top 85%",
+            once: true,
+          },
         }
       );
-
-      observer.observe(footerRef.current);
-
-      return () => observer.disconnect();
     });
 
     return () => mm.revert();
   }, []);
 
   const scrollToTop = () => {
-    lenis.scrollTo(0, { immediate: true });
+    if (lenis) {
+      lenis.scrollTo(0, { duration: 1.2 });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   return (
@@ -71,11 +70,12 @@ export default function Footer() {
       className="relative bg-[#111111] pt-24 pb-10 px-8 md:px-24 overflow-hidden"
     >
       <div
-        className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full pointer-events-none z-0"
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full z-0"
         style={{
           background:
-            "radial-gradient(circle, rgba(200,169,110,0.10) 0%, rgba(200,169,110,0.04) 35%, rgba(200,169,110,0) 70%)",
-          filter: "blur(90px)",
+            "radial-gradient(circle, rgba(200,169,110,0.10) 0%, rgba(200,169,110,0.04) 40%, transparent 70%)",
+          transform: "translate3d(-50%, 0, 0)",
+          contain: "paint",
         }}
       />
 
@@ -158,7 +158,9 @@ export default function Footer() {
         </p>
 
         <button
+          type="button"
           onClick={scrollToTop}
+          aria-label="Back to top"
           className="cursor-hover flex items-center gap-2 text-sm text-[#c8a96e] border border-[#c8a96e]/40 rounded-full px-5 py-2 transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66]"
         >
           Back to top

@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
-
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import lenis from "../lenis";
+
+gsap.registerPlugin(ScrollTrigger);
 
 import {
   FaHtml5,
@@ -58,18 +60,41 @@ export default function Hero() {
           duration: 1.2,
         });
 
-        gsap.to(orbitRef.current, {
+        const orbitAnim = gsap.to(orbitRef.current, {
           rotate: 360,
           duration: 22,
           ease: "none",
           repeat: -1,
         });
 
-        gsap.to(".skill-icon", {
+        const iconAnim = gsap.to(".skill-icon", {
           rotate: 360,
           duration: 8,
           ease: "none",
           repeat: -1,
+        });
+
+        // توقف انیمیشن‌های سنگین وقتی سکشن خارج از دید است
+        ScrollTrigger.create({
+          trigger: heroRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          onLeave: () => {
+            orbitAnim.pause();
+            iconAnim.pause();
+          },
+          onEnter: () => {
+            orbitAnim.play();
+            iconAnim.play();
+          },
+          onEnterBack: () => {
+            orbitAnim.play();
+            iconAnim.play();
+          },
+          onLeaveBack: () => {
+            orbitAnim.pause();
+            iconAnim.pause();
+          },
         });
 
       }, heroRef);
@@ -89,12 +114,17 @@ export default function Hero() {
       return;
     }
 
-    lenis.scrollTo(el, { offset: 0, immediate: true });
+    if (lenis) {
+      lenis.scrollTo(el, { offset: 0, duration: 1 });
+    } else {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   return (
 
     <section
+      id="hero"
       ref={heroRef}
       className="min-h-screen bg-[#111111] flex flex-col lg:flex-row items-center justify-center lg:justify-between px-6 sm:px-10 lg:px-24 overflow-hidden py-24 lg:py-0"
     >
@@ -190,6 +220,7 @@ export default function Hero() {
       {/* RIGHT - فقط از سایز لپ‌تاپ به بالا نمایش داده میشه */}
       <div
         ref={rightRef}
+        aria-hidden="true"
         className="hidden lg:flex w-1/2 justify-center"
       >
 

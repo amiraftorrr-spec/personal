@@ -19,17 +19,28 @@ const AdminPanel = lazy(() => import("./components/AdminPanel"));
 function MainSite() {
   return (
     <div className="relative">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[10000] focus:px-4 focus:py-2 focus:bg-[#c8a96e] focus:text-black focus:rounded-lg focus:font-semibold focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       <Particles />
       <FilmGrain />
       <CustomCursor />
-      <Hero />
-      <SectionDivider />
+      <main id="main-content">
+        <Hero />
+        <SectionDivider />
+
+        <Suspense fallback={null}>
+          <About />
+          <Skills />
+          <P />
+          <Contact />
+        </Suspense>
+      </main>
 
       <Suspense fallback={null}>
-        <About />
-        <Skills />
-        <P />
-        <Contact />
         <Footer />
       </Suspense>
     </div>

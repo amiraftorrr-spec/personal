@@ -21,15 +21,16 @@
     <link rel="canonical" href="https://aftor.ir/" />
 
     <!-- ===== Open Graph (پیش‌نمایش تو تلگرام، واتساپ، فیسبوک، لینکدین) ===== -->
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content="profile" />
     <meta property="og:title" content="aftor | Frontend Developer Portfolio" />
     <meta
       property="og:description"
       content="Frontend Developer crafting modern, interactive and visually engaging web experiences with React, Next.js, Tailwind CSS and GSAP."
     />
     <meta property="og:image" content="https://aftor.ir/me.webp" />
+    <meta property="og:image:alt" content="Amir Aftor Portfolio Preview" />
     <meta property="og:url" content="https://aftor.ir/" />
-    <meta property="og:site_name" content="aftor" />
+    <meta property="og:site_name" content="Amir Aftor" />
     <meta property="og:locale" content="en_US" />
 
     <!-- ===== Twitter Card ===== -->
@@ -40,36 +41,52 @@
       content="Frontend Developer crafting modern, interactive and visually engaging web experiences with React, Next.js, Tailwind CSS and GSAP."
     />
     <meta name="twitter:image" content="https://aftor.ir/me.webp" />
+    <meta name="twitter:image:alt" content="Amir Aftor Portfolio Preview" />
 
     <!-- ===== Structured Data (Schema.org / JSON-LD) ===== -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Person",
-        "name": "Amir Aftor",
-        "alternateName": "aftor",
-        "url": "https://aftor.ir/",
-        "image": "https://aftor.ir/me.webp",
-        "jobTitle": "Frontend Developer",
-        "description": "Frontend Developer crafting modern, interactive and visually engaging web experiences with React, Next.js, Tailwind CSS and GSAP.",
-        "sameAs": [
-          "https://t.me/amiraftor",
-          "https://instagram.com/amir.aftor"
-        ],
-        "knowsAbout": [
-          "JavaScript",
-          "TypeScript",
-          "React",
-          "Next.js",
-          "Tailwind CSS",
-          "GSAP",
-          "Frontend Development"
+        "@graph": [
+          {
+            "@type": "Person",
+            "@id": "https://aftor.ir/#person",
+            "name": "Amir Aftor",
+            "alternateName": "aftor",
+            "url": "https://aftor.ir/",
+            "image": "https://aftor.ir/me.webp",
+            "jobTitle": "Frontend Developer",
+            "description": "Frontend Developer crafting modern, interactive and visually engaging web experiences with React, Next.js, Tailwind CSS and GSAP.",
+            "sameAs": [
+              "https://t.me/amiraftor",
+              "https://instagram.com/amir.aftor"
+            ],
+            "knowsAbout": [
+              "JavaScript",
+              "TypeScript",
+              "React",
+              "Next.js",
+              "Tailwind CSS",
+              "GSAP",
+              "Frontend Development"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://aftor.ir/#website",
+            "url": "https://aftor.ir/",
+            "name": "Amir Aftor Portfolio",
+            "publisher": {
+              "@id": "https://aftor.ir/#person"
+            }
+          }
         ]
       }
     </script>
 
     <!-- ===== Favicon & Theme ===== -->
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="theme-color" content="#111111" />
   </head>
   <body>

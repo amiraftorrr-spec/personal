@@ -8,24 +8,19 @@ const isDesktop =
   typeof window !== "undefined" &&
   window.matchMedia("(pointer: fine)").matches;
 
+const prefersReducedMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 let lenis = null;
 
-if (isDesktop) {
+if (isDesktop && !prefersReducedMotion) {
   lenis = new Lenis({
     autoRaf: false,
-
-    // سرعت طبیعی
-    duration: 0.8,
-
-    // حس نرم ولی کنترل‌شده
-    lerp: 0.08,
-
+    lerp: 0.1,
     smoothWheel: true,
-    syncTouch: true,
-    touchInertiaMultiplier: 1.2,
-
-    wheelMultiplier: 0.9,
-
+    syncTouch: false,
+    wheelMultiplier: 1,
     infinite: false,
   });
 
@@ -35,18 +30,11 @@ if (isDesktop) {
     lenis.raf(time * 1000);
   });
 
-  gsap.ticker.lagSmoothing(500, 33);
+  // غیرفعال کردن lagSmoothing برای جلوگیری از پرش و لگ در اسکرول روان
+  gsap.ticker.lagSmoothing(0);
 }
 
-requestAnimationFrame(() => {
-  ScrollTrigger.refresh();
-});
-
 window.addEventListener("load", () => {
-  ScrollTrigger.refresh();
-});
-
-window.addEventListener("resize", () => {
   ScrollTrigger.refresh();
 });
 

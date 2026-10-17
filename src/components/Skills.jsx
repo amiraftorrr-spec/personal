@@ -118,7 +118,6 @@ const PARTICLE_POSITIONS = [
 export default function ScrollSkill() {
   const containerRef = useRef(null);
   const sectionsRef = useRef([]);
-  const glowRefs = useRef([]);
   const dotRefs = useRef([]);
   const scrollAnimRef = useRef(null);
   const activeIdxRef = useRef(0);
@@ -152,14 +151,15 @@ export default function ScrollSkill() {
             trigger: container,
             pin: true,
             anticipatePin: 1,
-            scrub: true,
+            scrub: 0.3,
             fastScrollEnd: true,
             preventOverlaps: true,
             snap: {
               snapTo: 1 / (totalPanels - 1),
-              delay: 0.25,
-              duration: { min: 0.2, max: 0.5 },
+              delay: 0.2,
+              duration: { min: 0.2, max: 0.4 },
               ease: "power2.out",
+              inertia: false,
             },
             end: () => "+=" + container.offsetWidth * (totalPanels - 1),
             onUpdate: (self) => {
@@ -174,14 +174,26 @@ export default function ScrollSkill() {
         });
         scrollAnimRef.current = scrollAnimation;
 
-        function updateActive(idx) {
-          glowRefs.current.forEach((el, i) => {
-            if (!el) return;
-            const isActive = i === idx;
-            el.style.opacity = isActive ? "1" : "0";
-            el.style.animationPlayState = isActive ? "running" : "paused";
-          });
+        // متوقف کردن انیمیشن ذرات وقتی سکشن اسکیلز خارج از دید است
+        ScrollTrigger.create({
+          trigger: container,
+          start: "top bottom",
+          end: "bottom top",
+          onLeave: () => {
+            container?.classList.add("skills-paused");
+          },
+          onEnter: () => {
+            container?.classList.remove("skills-paused");
+          },
+          onEnterBack: () => {
+            container?.classList.remove("skills-paused");
+          },
+          onLeaveBack: () => {
+            container?.classList.add("skills-paused");
+          },
+        });
 
+        function updateActive(idx) {
           dotRefs.current.forEach((d, i) => {
             if (!d) return;
             const isActive = i === idx;
@@ -192,11 +204,6 @@ export default function ScrollSkill() {
         }
 
         // تنظیم اولیه سریع
-        glowRefs.current.forEach((el, i) => {
-          if (!el) return;
-          el.style.opacity = i === 0 ? "1" : "0";
-          el.style.animationPlayState = i === 0 ? "running" : "paused";
-        });
         updateActive(0);
 
         sections.forEach((section) => {
@@ -281,29 +288,20 @@ export default function ScrollSkill() {
   }
 
   return (
-    <>
+    <section id="skills" aria-label="Skills">
       {/* ============ نسخه دسکتاپ - اسکرول افقی pin شده ============ */}
       <div className="hidden lg:block relative w-full" style={{ backgroundColor: "#111111" }}>
         <style>{`
-          @keyframes auroraShift {
-            0%   { transform: translate(0px, 0px) scale(1); }
-            50%  { transform: translate(30px, -20px) scale(1.15); }
-            100% { transform: translate(-20px, 15px) scale(1.05); }
-          }
-          .glow-layer {
-            animation: auroraShift 9s ease-in-out infinite alternate;
-            will-change: transform;
-          }
           .feature-item, .intro-row { transition: transform .35s ease, background-color .35s ease; }
           .feature-item:hover, .intro-row:hover { transform: translateX(-10px) scale(1.03); background-color: rgba(255,255,255,0.06); }
 
-          /* ذرات شناور حالا کلا CSS هستن - قبلا هر ذره یه gsap.to بی‌نهایت
-             جدا داشت (۴۸ تا تویین همزمان روی کل صفحه) که مستقیم با
-             اسکرول اصلی روی هم می‌افتاد و لگ می‌ساخت */
-          .particle {
+          .skills-particle {
             animation: floatParticle var(--pd, 4s) ease-in-out infinite;
             animation-delay: var(--pdelay, 0s);
             will-change: transform;
+          }
+          .skills-paused .skills-particle {
+            animation-play-state: paused !important;
           }
           @keyframes floatParticle {
             0%, 100% { transform: translate(0, 0) rotate(0deg); }
@@ -312,20 +310,9 @@ export default function ScrollSkill() {
         `}</style>
 
         <div ref={containerRef} className="relative h-screen overflow-hidden">
-          {techStack.map((tech, i) => (
-            <div
-              key={tech.key}
-              ref={(el) => (glowRefs.current[i] = el)}
-              className="glow-layer pointer-events-none absolute inset-0 z-0"
-              style={{
-                background: `radial-gradient(ellipse 900px 650px at 25% 45%, ${tech.color}35, transparent 70%)`,
-              }}
-            />
-          ))}
-
           <div
             className="relative z-10 flex h-full"
-            style={{ width: `${techStack.length * 100}vw`, willChange: "transform" }}
+            style={{ width: `${techStack.length * 100}vw` }}
           >
             {techStack.map((tech, index) => (
               <div
@@ -335,14 +322,10 @@ export default function ScrollSkill() {
                 }}
                 className="relative w-screen h-screen flex items-center justify-center overflow-hidden"
                 style={{
-                  // مهم‌ترین بهینه‌سازی: پنل‌هایی که الان دیده نمیشن (بقیه‌ی
-                  // ۵ تا صفحه) اصلا رندر/پینت نمیشن. مرورگر خودش تشخیص
-                  // میده کدوم داخل viewport هست و بقیه رو کاملا نادیده میگیره
-                  contentVisibility: "auto",
-                  containIntrinsicSize: "100vw 100vh",
+                  contain: "layout style paint",
                 }}
               >
-                <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
                   {PARTICLE_POSITIONS.map((pos, i) => {
                     const yValue = i % 2 === 0 ? -40 : 50;
                     const xValue = i % 3 === 0 ? -25 : 30;
@@ -351,7 +334,7 @@ export default function ScrollSkill() {
                     return (
                       <div
                         key={i}
-                        className="particle absolute w-2 h-2 rounded-full opacity-20"
+                        className="skills-particle absolute w-2 h-2 rounded-full opacity-20"
                         style={{
                           backgroundColor: tech.color,
                           left: `${pos.left}%`,
@@ -439,12 +422,18 @@ export default function ScrollSkill() {
                 </div>
 
                 <div
-                  className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-20"
-                  style={{ backgroundColor: tech.color }}
+                  className="pointer-events-none absolute top-10 right-12 w-80 h-80 rounded-full"
+                  style={{
+                    background: `radial-gradient(circle at center, ${tech.color}40 0%, ${tech.color}15 35%, transparent 68%)`,
+                    filter: "blur(35px)",
+                  }}
                 />
                 <div
-                  className="absolute bottom-0 left-0 w-96 h-96 rounded-full blur-3xl opacity-10"
-                  style={{ backgroundColor: tech.color }}
+                  className="pointer-events-none absolute bottom-16 left-12 w-96 h-96 rounded-full"
+                  style={{
+                    background: `radial-gradient(circle at center, ${tech.color}30 0%, ${tech.color}10 35%, transparent 68%)`,
+                    filter: "blur(40px)",
+                  }}
                 />
               </div>
             ))}
@@ -550,6 +539,6 @@ export default function ScrollSkill() {
           ))}
         </div>
       </section>
-    </>
+    </section>
   );
 }
