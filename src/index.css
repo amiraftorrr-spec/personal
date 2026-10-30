@@ -56,3 +56,14 @@ html {
     scroll-behavior: auto !important;
   }
 }
+
+/* Mobile touch feedback optimization */
+@media (max-width: 1023px) {
+  a,
+  button,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

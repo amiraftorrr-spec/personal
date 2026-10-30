@@ -53,6 +53,26 @@ export default function Footer() {
       );
     });
 
+    // انیمیشن نرم و سبک ستون‌های فوتر در موبایل و تبلت با اسکرول
+    mm.add("(max-width: 1023px)", () => {
+      const cols = colsRef.current?.querySelectorAll(".footer-col");
+      if (!cols?.length) return;
+
+      gsap.from(cols, {
+        y: 25,
+        opacity: 0,
+        duration: 0.6,
+        stagger: 0.1,
+        ease: "power2.out",
+        force3D: true,
+        scrollTrigger: {
+          trigger: footerRef.current,
+          start: "top 90%",
+          once: true,
+        },
+      });
+    });
+
     return () => mm.revert();
   }, []);
 
@@ -96,7 +116,7 @@ export default function Footer() {
             <a
               href="mailto:aftordev@gmail.com"
               aria-label="Send an email to aftordev@gmail.com"
-              className="cursor-hover w-11 h-11 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66]"
+              className="cursor-hover w-11 h-11 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66] active:scale-95"
             >
               <FaEnvelope />
             </a>
@@ -105,7 +125,7 @@ export default function Footer() {
               target="_blank"
               rel="noreferrer"
               aria-label="Telegram Profile"
-              className="cursor-hover w-11 h-11 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66]"
+              className="cursor-hover w-11 h-11 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66] active:scale-95"
             >
               <FaTelegramPlane />
             </a>
@@ -114,7 +134,7 @@ export default function Footer() {
               target="_blank"
               rel="noreferrer"
               aria-label="Instagram Profile"
-              className="cursor-hover w-11 h-11 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66]"
+              className="cursor-hover w-11 h-11 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66] active:scale-95"
             >
               <FaInstagram />
             </a>
@@ -161,7 +181,7 @@ export default function Footer() {
           type="button"
           onClick={scrollToTop}
           aria-label="Back to top"
-          className="cursor-hover flex items-center gap-2 text-sm text-[#c8a96e] border border-[#c8a96e]/40 rounded-full px-5 py-2 transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66]"
+          className="cursor-hover flex items-center gap-2 text-sm text-[#c8a96e] border border-[#c8a96e]/40 rounded-full px-5 py-2 transition-all duration-300 hover:bg-[#c8a96e] hover:text-[#111111] hover:shadow-[0_0_20px_#c8a96e66] active:scale-95"
         >
           Back to top
           <FaArrowUp className="text-xs" />

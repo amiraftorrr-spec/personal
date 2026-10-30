@@ -103,6 +103,25 @@ export default function Hero() {
 
     });
 
+    // انیمیشن سبک و بهینه برای موبایل و تبلت (بدون افت فریم)
+    mm.add("(max-width: 1023px)", () => {
+      const ctx = gsap.context(() => {
+        const elements = leftRef.current?.children;
+        if (elements?.length) {
+          gsap.from(elements, {
+            y: 24,
+            opacity: 0,
+            duration: 0.75,
+            stagger: 0.1,
+            ease: "power2.out",
+            force3D: true,
+          });
+        }
+      }, heroRef);
+
+      return () => ctx.revert();
+    });
+
     return () => mm.revert();
 
   }, []);
@@ -174,6 +193,7 @@ export default function Hero() {
             transition-all
             duration-300
             hover:scale-105
+            active:scale-95
             hover:shadow-[0_0_25px_#c8a96e66]
             focus:outline-none
             focus:ring-2
@@ -204,6 +224,7 @@ export default function Hero() {
             hover:bg-[#c8a96e]
             hover:text-black
             hover:scale-105
+            active:scale-95
             hover:shadow-[0_0_20px_#c8a96e44]
             focus:outline-none
             focus:ring-2

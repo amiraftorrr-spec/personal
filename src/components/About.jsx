@@ -121,6 +121,44 @@ export default function About() {
 
     });
 
+    // انیمیشن نرم و بهینه برای موبایل و تبلت (ورود با اسکرول بر پایه GPU)
+    mm.add("(max-width: 1023px)", () => {
+      const ctx = gsap.context(() => {
+        gsap.from(imageRef.current, {
+          y: 35,
+          opacity: 0,
+          scale: 0.94,
+          duration: 0.75,
+          ease: "power2.out",
+          force3D: true,
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 78%",
+            once: true,
+          },
+        });
+
+        const contentChildren = contentRef.current?.children;
+        if (contentChildren?.length) {
+          gsap.from(contentChildren, {
+            y: 25,
+            opacity: 0,
+            duration: 0.65,
+            stagger: 0.1,
+            ease: "power2.out",
+            force3D: true,
+            scrollTrigger: {
+              trigger: contentRef.current,
+              start: "top 82%",
+              once: true,
+            },
+          });
+        }
+      }, sectionRef);
+
+      return () => ctx.revert();
+    });
+
     return () => mm.revert();
   }, []);
 

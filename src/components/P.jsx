@@ -68,7 +68,7 @@ const ProjectCard = forwardRef(function ProjectCard({ project }, ref) {
   return (
     <div
       ref={ref}
-      className="project-card cursor-hover group relative rounded-3xl overflow-hidden bg-white/[0.04] backdrop-blur-sm border shadow-[0_8px_32px_rgba(0,0,0,0.28)]"
+      className="project-card cursor-hover group relative rounded-3xl overflow-hidden bg-white/[0.04] backdrop-blur-sm border shadow-[0_8px_32px_rgba(0,0,0,0.28)] transition-transform duration-200 active:scale-[0.98]"
       style={{ borderColor: BASE_BORDER, transform: "translateZ(0)" }}
     >
       {/* لایه گلو برای هاور پروکسیمیتی بر پایه GPU بدون لاگ */}
@@ -250,10 +250,48 @@ export default function Projects() {
       return () => ctx.revert();
     });
 
+    // انیمیشن نرم و بهینه برای موبایل و تبلت با اسکرول (کامپوزیت سبک GPU)
+    mm.add("(max-width: 1023px)", () => {
+      const ctx = gsap.context(() => {
+        gsap.from(headingRef.current, {
+          y: 25,
+          opacity: 0,
+          duration: 0.7,
+          ease: "power2.out",
+          force3D: true,
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 80%",
+            once: true,
+          },
+        });
+
+        const firstRowCards = firstRowRef.current?.querySelectorAll(".project-card");
+        if (firstRowCards?.length) {
+          gsap.from(firstRowCards, {
+            y: 35,
+            opacity: 0,
+            scale: 0.96,
+            duration: 0.65,
+            stagger: 0.12,
+            ease: "power2.out",
+            force3D: true,
+            scrollTrigger: {
+              trigger: firstRowRef.current,
+              start: "top 80%",
+              once: true,
+            },
+          });
+        }
+      }, sectionRef);
+
+      return () => ctx.revert();
+    });
+
     return () => mm.revert();
   }, []);
 
-  // نمایش/مخفی شدن ردیف دوم - انیمیشن فقط دسکتاپ، تو موبایل/تبلت فوری
+  // نمایش/مخفی شدن ردیف دوم با انیمیشن روان و سبک در دسکتاپ و موبایل
   useEffect(() => {
     if (open && extraRowRef.current) {
       const cards = extraRowRef.current.querySelectorAll(".project-card");
@@ -299,17 +337,37 @@ export default function Projects() {
           }
         );
       } else {
-        gsap.set(extraRowRef.current, { height: "auto", opacity: 1 });
-        gsap.set(cards, { y: 0, opacity: 1, scale: 1 });
-        ScrollTrigger.refresh();
-        if (lenis) {
-          lenis.scrollTo(extraRowRef.current, { offset: -40 });
-        } else {
-          extraRowRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }
+        gsap.fromTo(
+          extraRowRef.current,
+          { height: 0, opacity: 0 },
+          {
+            height: "auto",
+            opacity: 1,
+            duration: 0.45,
+            ease: "power2.out",
+            onComplete: () => {
+              ScrollTrigger.refresh();
+              extraRowRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "nearest",
+              });
+            },
+          }
+        );
+
+        gsap.fromTo(
+          cards,
+          { y: 30, opacity: 0, scale: 0.96 },
+          {
+            y: 0,
+            opacity: 1,
+            scale: 1,
+            duration: 0.5,
+            stagger: 0.08,
+            ease: "power2.out",
+            force3D: true,
+          }
+        );
       }
     }
   }, [open]);
@@ -337,11 +395,23 @@ export default function Projects() {
         setOpen(true);
       }
     } else {
-      gsap.set(arrowRef.current, { rotate: open ? 0 : 180 });
+      gsap.to(arrowRef.current, {
+        rotate: open ? 0 : 180,
+        duration: 0.35,
+        ease: "power2.inOut",
+      });
 
       if (open) {
-        setOpen(false);
-        ScrollTrigger.refresh();
+        gsap.to(extraRowRef.current, {
+          height: 0,
+          opacity: 0,
+          duration: 0.35,
+          ease: "power2.in",
+          onComplete: () => {
+            setOpen(false);
+            ScrollTrigger.refresh();
+          },
+        });
       } else {
         setOpen(true);
       }
@@ -391,7 +461,7 @@ export default function Projects() {
           onClick={toggleOpen}
           aria-expanded={open}
           aria-label={open ? "Show less projects" : "Show more projects"}
-          className="cursor-hover w-14 h-14 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-black hover:scale-110 hover:shadow-[0_0_25px_#c8a96e66] focus:outline-none focus:ring-2 focus:ring-[#c8a96e]"
+          className="cursor-hover w-14 h-14 flex items-center justify-center rounded-full border border-[#c8a96e]/40 text-[#c8a96e] transition-all duration-300 hover:bg-[#c8a96e] hover:text-black hover:scale-110 active:scale-95 hover:shadow-[0_0_25px_#c8a96e66] focus:outline-none focus:ring-2 focus:ring-[#c8a96e]"
         >
           <span ref={arrowRef} className="inline-flex">
             <FaChevronDown className="text-xl" />

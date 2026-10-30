@@ -275,6 +275,52 @@ export default function ScrollSkill() {
       return () => ctx.revert();
     });
 
+    // انیمیشن ورود کارت‌ها در موبایل/تبلت با اسکرول (کامپوزیت سبک GPU)
+    mm.add("(max-width: 1023px)", () => {
+      const cardsSection = cardsSectionRef.current;
+      if (!cardsSection) return;
+
+      const validCards = cardsRef.current.filter(Boolean);
+
+      const ctx = gsap.context(() => {
+        const headerEl = cardsSection.querySelector(".skills-mobile-header");
+        if (headerEl) {
+          gsap.from(headerEl.children, {
+            y: 25,
+            opacity: 0,
+            duration: 0.65,
+            stagger: 0.1,
+            ease: "power2.out",
+            force3D: true,
+            scrollTrigger: {
+              trigger: cardsSection,
+              start: "top 80%",
+              once: true,
+            },
+          });
+        }
+
+        if (validCards.length > 0) {
+          gsap.from(validCards, {
+            y: 35,
+            opacity: 0,
+            scale: 0.96,
+            duration: 0.6,
+            stagger: 0.1,
+            ease: "power2.out",
+            force3D: true,
+            scrollTrigger: {
+              trigger: cardsSection.querySelector(".skills-mobile-grid") || cardsSection,
+              start: "top 78%",
+              once: true,
+            },
+          });
+        }
+      }, cardsSection);
+
+      return () => ctx.revert();
+    });
+
     return () => mm.revert();
   }, []);
 
@@ -455,7 +501,7 @@ export default function ScrollSkill() {
         </div>
       </div>
 
-      {/* ============ نسخه موبایل/تبلت - کارت‌های شیشه‌ای (بدون انیمیشن) ============ */}
+      {/* ============ نسخه موبایل/تبلت - کارت‌های شیشه‌ای ============ */}
       <section
         ref={cardsSectionRef}
         className="block lg:hidden relative w-full py-20 sm:py-24 px-5 sm:px-8"
@@ -467,8 +513,10 @@ export default function ScrollSkill() {
             background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015));
             backdrop-filter: blur(18px);
             -webkit-backdrop-filter: blur(18px);
-            transition: transform .4s ease, box-shadow .4s ease, border-color .4s ease, background .4s ease;
+            transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease, background .3s ease;
             overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            will-change: transform, opacity;
           }
           .skill-card::before {
             content: "";
@@ -478,13 +526,13 @@ export default function ScrollSkill() {
             pointer-events: none;
           }
           .skill-card:active {
-            transform: translateY(-4px) scale(1.01);
+            transform: scale(0.97);
             background: linear-gradient(145deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03));
-            box-shadow: 0 20px 50px -10px var(--glow, transparent), inset 0 1px 0 rgba(255,255,255,0.15);
+            box-shadow: 0 10px 30px -10px var(--glow, transparent), inset 0 1px 0 rgba(255,255,255,0.15);
           }
         `}</style>
 
-        <div className="max-w-6xl mx-auto text-center mb-12 sm:mb-16">
+        <div className="skills-mobile-header max-w-6xl mx-auto text-center mb-12 sm:mb-16">
           <div
             className="mx-auto mb-6 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl border"
             style={{
@@ -504,7 +552,7 @@ export default function ScrollSkill() {
           </p>
         </div>
 
-        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+        <div className="skills-mobile-grid max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
           {techCards.map((tech, index) => (
             <div
               key={tech.key}

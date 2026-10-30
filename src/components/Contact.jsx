@@ -82,6 +82,56 @@ export default function Contact() {
       return () => ctx.revert();
     });
 
+    // انیمیشن نرم و سبک برای موبایل و تبلت با اسکرول (بر پایه GPU)
+    mm.add("(max-width: 1023px)", () => {
+      const ctx = gsap.context(() => {
+        gsap.from(headingRef.current, {
+          y: 25,
+          opacity: 0,
+          duration: 0.7,
+          ease: "power2.out",
+          force3D: true,
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 80%",
+            once: true,
+          },
+        });
+
+        gsap.from(visualRef.current, {
+          y: 30,
+          opacity: 0,
+          duration: 0.7,
+          ease: "power2.out",
+          force3D: true,
+          scrollTrigger: {
+            trigger: visualRef.current,
+            start: "top 85%",
+            once: true,
+          },
+        });
+
+        const fields = formRef.current?.querySelectorAll(".contact-field");
+        if (fields?.length) {
+          gsap.from(fields, {
+            y: 20,
+            opacity: 0,
+            duration: 0.55,
+            stagger: 0.08,
+            ease: "power2.out",
+            force3D: true,
+            scrollTrigger: {
+              trigger: formRef.current,
+              start: "top 85%",
+              once: true,
+            },
+          });
+        }
+      }, sectionRef);
+
+      return () => ctx.revert();
+    });
+
     return () => {
       mm.revert();
     };
