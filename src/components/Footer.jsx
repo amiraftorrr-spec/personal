@@ -177,6 +177,14 @@ export default function Footer() {
           {"\u00A9"} {new Date().getFullYear()} amiraftor. All rights reserved.
         </p>
 
+        <div
+          aria-label="نماد اعتماد الکترونیکی"
+          className="flex items-center justify-center [&_img]:block [&_img]:h-auto [&_img]:max-h-24 [&_img]:max-w-[120px] [&_img]:w-auto [&_img]:object-contain"
+          dangerouslySetInnerHTML={{
+            __html: `<a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=8599992&Code=rCXdJOzfMDp4cHqV1SeZgrZk3mDnO1EG'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=8599992&Code=rCXdJOzfMDp4cHqV1SeZgrZk3mDnO1EG' alt='' style='cursor:pointer' code='rCXdJOzfMDp4cHqV1SeZgrZk3mDnO1EG'></a>`,
+          }}
+        />
+
         <button
           type="button"
           onClick={scrollToTop}
