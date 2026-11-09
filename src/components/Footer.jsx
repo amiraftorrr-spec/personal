@@ -169,6 +169,16 @@ export default function Footer() {
         </div>
       </div>
 
+      <div className="relative z-40 max-w-6xl mx-auto flex justify-center pb-8">
+        <div
+          aria-label="نماد اعتماد الکترونیکی"
+          className="flex items-center justify-center [&_img]:block [&_img]:h-auto [&_img]:max-h-32 [&_img]:max-w-[160px] [&_img]:w-auto [&_img]:object-contain"
+          dangerouslySetInnerHTML={{
+            __html: `<a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=8599992&Code=rCXdJOzfMDp4cHqV1SeZgrZk3mDnO1EG'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=8599992&Code=rCXdJOzfMDp4cHqV1SeZgrZk3mDnO1EG' alt='' style='cursor:pointer' code='rCXdJOzfMDp4cHqV1SeZgrZk3mDnO1EG'></a>`,
+          }}
+        />
+      </div>
+
       <div
         className="relative z-40 max-w-6xl mx-auto pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-4"
         style={{ borderColor: BASE_BORDER }}
@@ -176,15 +186,6 @@ export default function Footer() {
         <p className="text-zinc-500 text-sm text-center md:text-left">
           {"\u00A9"} {new Date().getFullYear()} amiraftor. All rights reserved.
         </p>
-
-        <div
-          aria-label="نماد اعتماد الکترونیکی"
-          className="flex items-center justify-center [&_img]:block [&_img]:h-auto [&_img]:max-h-24 [&_img]:max-w-[120px] [&_img]:w-auto [&_img]:object-contain"
-          dangerouslySetInnerHTML={{
-            __html: `<a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=8599992&Code=rCXdJOzfMDp4cHqV1SeZgrZk3mDnO1EG'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=8599992&Code=rCXdJOzfMDp4cHqV1SeZgrZk3mDnO1EG' alt='' style='cursor:pointer' code='rCXdJOzfMDp4cHqV1SeZgrZk3mDnO1EG'></a>`,
-          }}
-        />
-
         <button
           type="button"
           onClick={scrollToTop}
