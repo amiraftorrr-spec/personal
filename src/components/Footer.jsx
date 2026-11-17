@@ -185,7 +185,7 @@ export default function Footer() {
       >
         <p className="text-zinc-500 text-sm text-center md:text-left">
           {"\u00A9"} {new Date().getFullYear()} amiraftor. All rights reserved.
-          <span className="ml-2 text-zinc-600">v3.4.6</span>
+          <span className="ml-2 text-zinc-600">v3.4.7</span>
         </p>
         <button
           type="button"
