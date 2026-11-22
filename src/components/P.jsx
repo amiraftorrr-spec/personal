@@ -49,11 +49,27 @@ const projects = [
   },
   {
     id: 6,
-    title: "Chat App",
-    tag: "Real-Time",
-    description: "A real-time chat application with instant messaging.",
-    image: "/work.webp",
-    link: "#",
+    title: "Tedlist",
+    tag: "Productivity",
+    description: "A fast, modern to-do list and daily task management web app with intuitive UI and Android APK support.",
+    image: "/tedlist.webp",
+    link: "https://tedlist.vercel.app/",
+  },
+  {
+    id: 7,
+    title: "Poyan Afzar",
+    tag: "Hardware & Software",
+    description: "An online store and digital platform for computer hardware, peripherals, and software solutions.",
+    image: "/poyan.webp",
+    link: "https://poyan-afzar.vercel.app/",
+  },
+  {
+    id: 8,
+    title: "Webptor",
+    tag: "Web Tool",
+    description: "A fast and responsive online image converter to transform any image format into lightweight WebP in seconds.",
+    image: "/webptor.webp",
+    link: "https://webptor.vercel.app/",
   },
 ];
 
@@ -207,7 +223,7 @@ export default function Projects() {
   const [open, setOpen] = useState(false);
 
   const firstRow = projects.slice(0, 3);
-  const secondRow = projects.slice(3, 6);
+  const secondRow = projects.slice(3);
 
   // انیمیشن‌های ورود موقع اسکرول - فقط دسکتاپ (>=1024px)
   useEffect(() => {
